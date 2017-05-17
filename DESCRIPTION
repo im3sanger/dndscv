@@ -9,9 +9,12 @@ Description: This package contains functions for studying selection on coding se
 Reference: Martincorena I et al, 2017. Universal patterns of selection in cancer and somatic tissues. BioRxiv. https://doi.org/10.1101/132324
 Imports:
   seqinr,
+  Biostrings,
   MASS,
   GenomicRanges
-LazyData: true
+LazyData: false
 License: GPL-3
 Encoding: UTF-8
+VignetteBuilder: knitr
+Suggests: knitr, BiocStyle
 RoxygenNote: 6.0.1

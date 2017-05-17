@@ -8,8 +8,9 @@
 #' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
 #' @param gene_list List of genes to restrict the analysis (use for targeted sequencing studies)
 #' @param refdb Reference database (path to .rda file)
-#' @param substmodel Substitution model (precomputed models are available in the data directory)
-#' @param known_cancergenes List of a-priori known cancer genes (to be excluded from the indel background model)
+#' @param sm Substitution model (precomputed models are available in the data directory)
+#' @param kc List of a-priori known cancer genes (to be excluded from the indel background model)
+#' @param cv Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates]
 #' @param max_muts_per_gene_per_sample If n<Inf, arbitrarily the first n mutations by chr position will be kept
 #' @param max_coding_muts_per_sample Hypermutator samples often reduce power to detect selection
 #' @param use_indel_sites Use unique indel sites instead of the total number of indels (it tends to be more robust)
@@ -29,14 +30,14 @@
 #' 
 #' @export
 
-dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "submod_192r_3w", known_cancergenes = "hg19", covs = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T) {
+dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T) {
 
     ## 1. Environment
     message("[1] Loading the environment...")
 
     # [Input] Reference database
     if (refdb == "hg19") {
-        load(sprintf("/Users/im3/Desktop/Selection_paper/Code_release/dndscv/data/refcds_%s.rda",refdb)) # Reference database
+        data("refcds_hg19", package="dndscv")
     } else {
         load(refdb)
     }
@@ -52,30 +53,36 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "sub
         gr_genes = gr_genes[gr_genes$names %in% gene_list] # Only input genes
     }
 
+    # [Input] Covariates (The user can input a custom set of covariates as a matrix)
+    if (is.character(cv)) {
+        data(list=sprintf("covariates_%s",cv), package="dndscv")
+    } else {
+        covs = cv
+    }
+    
     # [Input] Known cancer genes (The user can input a gene list as a character vector)
-    if (known_cancergenes == "hg19") {
-        load("/Users/im3/Desktop/Selection_paper/Code_release/dndscv/data/cancergenes_cgc81.rda")
+    if (kc[1] %in% c("cgc81")) {
+        data(list=sprintf("cancergenes_%s",kc), package="dndscv")
+    } else {
+        known_cancergenes = kc
     }
     
     # [Input] Substitution model (The user can also input a custom substitution model as a matrix)
-    if (is.character(substmodel)) {
-        load(sprintf("/Users/im3/Desktop/Selection_paper/Code_release/dndscv/data/%s.rda", substmodel))
-    }
-    
-    # [Input] Covariates (The user can input a custom set of covariates as a matrix)
-    if (covs == "hg19") {
-        load("/Users/im3/Desktop/Selection_paper/Code_release/dndscv/data/covariates_hg19.rda")
+    if (is.character(sm)) {
+        data(list=sprintf("submod_%s",sm), package="dndscv")
+    } else {
+        substmodel = sm
     }
     
     # Expanding the reference sequences [for faster access]
     for (j in 1:length(RefCDS)) {
-        RefCDS[[j]]$seq_cds = strsplit(as.character(RefCDS[[j]]$seq_cds), split="")[[1]]
-        RefCDS[[j]]$seq_cds1up = strsplit(as.character(RefCDS[[j]]$seq_cds1up), split="")[[1]]
-        RefCDS[[j]]$seq_cds1down = strsplit(as.character(RefCDS[[j]]$seq_cds1down), split="")[[1]]
+        RefCDS[[j]]$seq_cds = base::strsplit(as.character(RefCDS[[j]]$seq_cds), split="")[[1]]
+        RefCDS[[j]]$seq_cds1up = base::strsplit(as.character(RefCDS[[j]]$seq_cds1up), split="")[[1]]
+        RefCDS[[j]]$seq_cds1down = base::strsplit(as.character(RefCDS[[j]]$seq_cds1down), split="")[[1]]
         if (!is.null(RefCDS[[j]]$seq_splice)) {
-            RefCDS[[j]]$seq_splice = strsplit(as.character(RefCDS[[j]]$seq_splice), split="")[[1]]
-            RefCDS[[j]]$seq_splice1up = strsplit(as.character(RefCDS[[j]]$seq_splice1up), split="")[[1]]
-            RefCDS[[j]]$seq_splice1down = strsplit(as.character(RefCDS[[j]]$seq_splice1down), split="")[[1]]
+            RefCDS[[j]]$seq_splice = base::strsplit(as.character(RefCDS[[j]]$seq_splice), split="")[[1]]
+            RefCDS[[j]]$seq_splice1up = base::strsplit(as.character(RefCDS[[j]]$seq_splice1up), split="")[[1]]
+            RefCDS[[j]]$seq_splice1down = base::strsplit(as.character(RefCDS[[j]]$seq_splice1down), split="")[[1]]
         }
     }
     
@@ -249,11 +256,11 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "sub
         r = names(l)[l>0]
         l = l[l>0]
         
-        params = unique(strsplit(x=paste(r,collapse="*"), split="\\*")[[1]])
+        params = unique(base::strsplit(x=paste(r,collapse="*"), split="\\*")[[1]])
         indmat = as.data.frame(array(0, dim=c(length(r),length(params))))
         colnames(indmat) = params
         for (j in 1:length(r)) {
-            indmat[j, strsplit(r[j], split="\\*")[[1]]] = 1
+            indmat[j, base::strsplit(r[j], split="\\*")[[1]]] = 1
         }
         
         model = glm(formula = n ~ offset(log(l)) + . -1, data=indmat, family=poisson(link=log))
@@ -284,7 +291,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "sub
     
     genemuts = data.frame(gene_name = sapply(RefCDS, function(x) x$gene_name), n_syn=NA, n_mis=NA, n_non=NA, n_spl=NA, exp_syn=NA, exp_mis=NA, exp_non=NA, exp_spl=NA)
     genemuts[,2:5] = t(sapply(RefCDS, function(x) colSums(x$N)))
-    mutrates = sapply(substmodel[,1], function(x) prod(parmle[strsplit(x,split="\\*")[[1]]])) # Expected rate per available site
+    mutrates = sapply(substmodel[,1], function(x) prod(parmle[base::strsplit(x,split="\\*")[[1]]])) # Expected rate per available site
     genemuts[,6:9] = t(sapply(RefCDS, function(x) colSums(x$L*mutrates)))
     
     # Covariates
@@ -301,9 +308,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "sub
     model = suppressWarnings(glm.nb(n_syn ~ offset(log(exp_syn)) + . , data = nbrdf))
     if (!is.null(model$th.warn) | nrow(genemuts)<500) { # If there are warnings or if <500 genes, we run the regression without covariates
         model = glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
-        message(sprintf("    Background regression model for substitutions: no covariates were used (theta = %0.3g).", model$theta))
+        message(sprintf("    Regression model for substitutions: no covariates were used (theta = %0.3g).", model$theta))
     } else {
-        message(sprintf("    Background regression model for substitutions: all covariates were used (theta = %0.3g).", model$theta))
+        message(sprintf("    Regression model for substitutions: all covariates were used (theta = %0.3g).", model$theta))
     }
     if (all(model$y==genemuts$n_syn)) {
         genemuts$exp_syn_cv = model$fitted.values
