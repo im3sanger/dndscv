@@ -1,0 +1,46 @@
+---
+title: "dNdScv"
+author: "Inigo Martincorena"
+date: "11 May 2017"
+output: html_document
+---
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{dNdScv}
+%\VignetteDepends{dndscv}
+-->
+
+# dNdScv
+#### Inigo Martincorena
+11 May 2017
+
+dNdScv is a suite of dN/dS methods to study selection in cancer genomes or other resequencing studies with low densities of mutations per sample.
+
+For a detailed description of the core algorithm (dNdScv) see:
+
+Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Submitted.
+
+Load data from `dndscv` example
+```{r}
+library(dndscv)
+regions <- GRanges("B.FR.83.HXB2_LAI_IIIB_BRU_K034", IRanges(start = 3120, end=3140))
+files <- c(system.file("extdata", "test.bam", package="deepSNV"), system.file("extdata", "control.bam", package="deepSNV"))
+counts <- loadAllData(files, regions, q=30)
+```
+
+ShearwaterML: "betabinLRT" calculates p-values for each possible mutation
+```{r}
+pvals <- betabinLRT(counts, rho=1e-4, maxtruncate = 1)$pvals
+qvals <- p.adjust(pvals, method="BH")
+dim(qvals) = dim(pvals)
+vcfML = qvals2Vcf(qvals, counts, regions, samples = files, mvcf = TRUE)
+```
+
+Original Shearwater: "bbb" computes the original Bayes factors
+
+```{r}
+bf <- bbb(counts, model = "OR", rho=1e-4)
+vcfBF <- bf2Vcf(bf, counts, regions, samples = files, prior = 0.5, mvcf = TRUE)
+
+plot(pvals[1,,], bf[1,,]/(1+bf[1,,]), log="xy")
+```
