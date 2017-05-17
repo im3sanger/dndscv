@@ -1,23 +1,32 @@
 #' dNdScv
 #'
-#' Default parameters typically increase the performance of the method on cancer exome studies.
+#' Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
 #'
 #' @author Inigo Martincorena (Wellcome Trust Sanger Institute)
-#' @citation Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Under revision.
-#' @citation Pre-print available in BioRxiv: https://doi.org/10.1101/132324
+#' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Under revision. Preprint available in BioRxiv: https://doi.org/10.1101/132324
 #' 
-#' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt)
+#' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
 #' @param gene_list List of genes to restrict the analysis (use for targeted sequencing studies)
-#' @param substmodel Substitution model (other precomputed models are available in the data directory)
-#' @param known_cancergenes List of a-priori known cancer genes (to exclude from the indel background model)
-#' @param max_muts_per_gene_per_sample If n<Inf, arbitrarily the first n mutations by chr position will be kept (this is deterministic and avoids biasing dN/dS by sampling based on impact)
+#' @param refdb Reference database (path to .rda file)
+#' @param substmodel Substitution model (precomputed models are available in the data directory)
+#' @param known_cancergenes List of a-priori known cancer genes (to be excluded from the indel background model)
+#' @param max_muts_per_gene_per_sample If n<Inf, arbitrarily the first n mutations by chr position will be kept
 #' @param max_coding_muts_per_sample Hypermutator samples often reduce power to detect selection
 #' @param use_indel_sites Use unique indel sites instead of the total number of indels (it tends to be more robust)
 #' @param min_indels Minimum number of indels required to run the indel recurrence module
-#' @param maxcovs Maximum number of covariates that will be considered
+#' @param maxcovs Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)
 #' @param constrain_wnon_wspl This constrains wnon==wspl (this typically leads to higher power to detect selection)
 #'
-#' @return 
+#' @return 'dndscv' returns a list of objects:
+#' @return - globaldnds: Global dN/dS estimates across all genes.
+#' @return - sel_cv: Gene-wise selection results using dNdScv.
+#' @return - sel_loc: Gene-wise selection results using dNdSloc.
+#' @return - annotmuts: Annotated coding mutations.
+#' @return - genemuts: Observed and expected numbers of mutations per gene.
+#' @return - mle_submodel: MLEs of the substitution model.
+#' @return - exclsamples: Samples excluded from the analysis.
+#' @return - exclmuts: Coding mutations excluded from the analysis.
+#' 
 #' @export
 
 dndscv = function(mutations, gene_list = NULL, refdb = "hg19", substmodel = "submod_192r_3w", known_cancergenes = "hg19", covs = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T) {
