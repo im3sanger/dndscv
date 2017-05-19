@@ -1,11 +1,11 @@
 Package: dndscv
-Title: Poisson-based dN/dS models to quantify natural selection in genomic studies
+Title: Poisson-based dN/dS models to quantify natural selection in somatic evolution
 Type: Package
 Version: 0.0.0.9
 Date: 2017-05-11
 Author: Inigo Martincorena
 Maintainer: Inigo Martincorena <im3@sanger.ac.uk>
-Description: This package contains functions for studying selection on coding sequences using a Poisson implementation of dN/dS. A Poisson model of dN/dS facilitates the study of selection beyond traditional codon models, including complex context-dependent mutation effects and selection on nonsense and splice site mutations. This model is best suited for resequencing studies, with very low density of mutations per base pair. The model was initially developed for cancer genome sequencing studies, and specific functions are provided to perform driver gene discovery using the dNdScv method on human cancer genomic data.
+Description: This package contains functions for studying selection on coding sequences using a Poisson implementation of dN/dS. A Poisson model of dN/dS facilitates the study of selection beyond traditional codon models, including complex context-dependent mutation effects and selection on nonsense and splice site mutations. This model is best suited for resequencing studies, with very low density of mutations per base pair. The model was initially developed for cancer genome sequencing studies, and specific functions are provided to perform driver gene discovery using the dNdScv method on human cancer genomic data. The first beta version of this package only supports analyses of human data. Future versions of the package will support analyses on any species using a general FASTA input format.
 Reference: Martincorena I et al, 2017. Universal patterns of selection in cancer and somatic tissues. BioRxiv. https://doi.org/10.1101/132324
 Imports:
   seqinr,
@@ -15,6 +15,6 @@ Imports:
 LazyData: false
 License: GPL-3
 Encoding: UTF-8
+Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
-Suggests: knitr, BiocStyle
 RoxygenNote: 6.0.1

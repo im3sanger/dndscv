@@ -4,11 +4,10 @@
 \alias{dndscv}
 \title{dNdScv}
 \usage{
-dndscv(mutations, gene_list = NULL, refdb = "hg19",
-  substmodel = "submod_192r_3w", known_cancergenes = "hg19",
-  covs = "hg19", max_muts_per_gene_per_sample = 3,
+dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
+  kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3,
   max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5,
-  maxcovs = 20, constrain_wnon_wspl = T)
+  maxcovs = 20, constrain_wnon_wspl = T, outp = 3)
 }
 \arguments{
 \item{mutations}{Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.}
@@ -17,9 +16,11 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19",
 
 \item{refdb}{Reference database (path to .rda file)}
 
-\item{substmodel}{Substitution model (precomputed models are available in the data directory)}
+\item{sm}{Substitution model (precomputed models are available in the data directory)}
 
-\item{known_cancergenes}{List of a-priori known cancer genes (to be excluded from the indel background model)}
+\item{kc}{List of a-priori known cancer genes (to be excluded from the indel background model)}
+
+\item{cv}{Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates] [cv=NULL runs dndscv without covariates]}
 
 \item{max_muts_per_gene_per_sample}{If n<Inf, arbitrarily the first n mutations by chr position will be kept}
 
@@ -32,6 +33,8 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19",
 \item{maxcovs}{Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)}
 
 \item{constrain_wnon_wspl}{This constrains wnon==wspl (this typically leads to higher power to detect selection)}
+
+\item{outp}{Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv}
 }
 \value{
 'dndscv' returns a list of objects:
@@ -51,6 +54,10 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19",
 - exclsamples: Samples excluded from the analysis.
 
 - exclmuts: Coding mutations excluded from the analysis.
+
+- nbreg: Negative binomial regression model for substitutions.
+
+- nbregind: Negative binomial regression model for indels.
 }
 \description{
 Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.

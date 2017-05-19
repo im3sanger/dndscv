@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Inigo Martincorena (May 2017)" />
+
+
+<title>Selection analyses and cancer driver discovery using dNdScv</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Selection analyses and cancer driver discovery using dNdScv</h1>
+<h4 class="author"><em>Inigo Martincorena (May 2017)</em></h4>
+
+
+
+<p>The <strong>dNdScv</strong> R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena <em>et al.</em>, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The <em>dNdScv</em> method was designed to detect cancer driver genes (<em>i.e.</em> genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, <em>dNdScv</em> uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman <em>et al.</em>, 2006).</p>
+<p>This vignette shows how to perform driver discovery and selection analyses with dNdScv in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species.</p>
+<p>Main reference: Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Under review</em>.</p>
+<div id="example-1-driver-discovery-positive-selection-in-cancer-cancer-exomesgenomes" class="section level2">
+<h2>Example 1: Driver discovery (positive selection) in cancer cancer exomes/genomes</h2>
+<div id="the-simplest-way-to-run-dndscv" class="section level4">
+<h4>The simplest way to run dNdScv</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;seqinr&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;Biostrings&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;MASS&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;GenomicRanges&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">data</span>(<span class="st">&quot;dataset_simbreast&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+dndsout =<span class="st"> </span><span class="kw">dndscv</span>(mutations)</code></pre></div>
+<pre><code>## Warning in dndscv(mutations): Same mutations observed in different
+## sampleIDs. Please verify that these are independent events and remove
+## duplicates otherwise.</code></pre>
+</div>
+<div id="inputs-and-default-parameters" class="section level4">
+<h4>Inputs and default parameters</h4>
+<p>For this example, we have used a simulated dataset of 196 breast cancer exomes provided in the package. The simplest way to run the dndscv function is to provide a table of mutations. Mutations are provided as a <em>data.frame</em> with five columns (sampleID, chromosome, position, reference base and mutant base). It is important that only unique mutations are provided in the file. Multiple instances of the same mutation in related samples (for example, when sequencing multiple samples of the same tumour) should only be listed once.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(mutations)</code></pre></div>
+<pre><code>##   sampleID chr      pos ref mut
+## 1 Sample_1   1   871244   G   C
+## 2 Sample_1   1  6648841   C   G
+## 3 Sample_1   1 17557072   G   A
+## 4 Sample_1   1 22838492   G   C
+## 5 Sample_1   1 27097733   G   A
+## 6 Sample_1   1 27333206   G   A</code></pre>
+<p>With the example dataset provided, the function should take about one minute to run. In this example, the function issues a warning as it detects the same mutation in more than one sample, requesting the user to verify that the input table of mutations only contains independent mutation events. In this case, each sample corresponds to a different patient and so the warning can be safely ignored.</p>
+<p>We have run dNdScv with default parameters. This includes removing ultra-hypermutator samples and subsampling mutations when encountering too many mutations per gene in the same sample. These were designed to protect against loss of sensitivity from ultra-hypermutators and from clustered artefacts in the input mutation table, but there are occasions when the user will prefer to relax these (see Example 2).</p>
+<div id="dndscv-outputs-table-of-significant-genes" class="section level5">
+<h5>dndscv outputs: Table of significant genes</h5>
+<p>The output of the <em>dndscv</em> function is a list of objects. For an analysis of exome or genome data, the most relevant output will often be the result of neutrality tests at gene level. <em>P-values</em> for substitutions are obtained by Likelihood-Ratio Tests as described in (Martincorena <em>et al</em>, 2017) and q-values are obtained by Benjamini-Hodgberg’s multiple testing correction. The table also includes information on the number of substitutions of each class observed in each gene, as well as maximum-likelihood estimates (MLEs) of the dN/dS ratios for each gene, for missense (<em>wmis</em>), nonsense (<em>wnon</em>), essential splice site mutations (<em>wspl</em>) and indels (<em>wind</em>).</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sel_cv =<span class="st"> </span>dndsout$sel_cv
+<span class="kw">print</span>(<span class="kw">head</span>(sel_cv), <span class="dt">digits =</span> <span class="dv">3</span>)</code></pre></div>
+<pre><code>##       gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv
+## 18056      TP53     1    43     5     4     5  113.68   221.7   221.7
+## 12976    PIK3CA     3    34     0     0     3   29.76     0.0     0.0
+## 9224       KRAS     1    21     0     0     0  125.99     0.0     0.0
+## 18923       VHL     3     9     1     0     4   24.76    38.2    38.2
+## 1296        APC     2     8    10     0     6    2.82    31.2    31.2
+## 1465     ARID1A     1     7    10     0     3    3.30    53.5    53.5
+##       wind_cv  pmis_cv ptrunc_cv pallsubs_cv qallsubs_cv  pind_cv
+## 18056   138.8 0.00e+00  1.11e-16    0.00e+00     0.0e+00 1.73e-09
+## 12976    30.7 0.00e+00  5.67e-01    0.00e+00     0.0e+00 2.12e-04
+## 9224      0.0 0.00e+00  8.43e-01    0.00e+00     0.0e+00 1.00e+00
+## 18923   204.5 7.43e-09  2.23e-02    7.95e-09     2.0e-05 1.32e-08
+## 1296     23.1 4.96e-02  2.82e-10    2.12e-09     6.1e-06 1.81e-06
+## 1465     14.4 3.64e-02  2.96e-12    2.39e-11     1.2e-07 1.84e-03
+##       pglobal_cv qglobal_cv
+## 18056   0.00e+00   0.00e+00
+## 12976   0.00e+00   0.00e+00
+## 9224    0.00e+00   0.00e+00
+## 18923   4.00e-15   2.01e-11
+## 1296    1.31e-13   5.28e-10
+## 1465    1.40e-12   4.68e-09</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">signif_genes =<span class="st"> </span>sel_cv[sel_cv$qglobal_cv&lt;<span class="fl">0.1</span>, <span class="kw">c</span>(<span class="st">&quot;gene_name&quot;</span>,<span class="st">&quot;qglobal_cv&quot;</span>)]
+<span class="kw">rownames</span>(signif_genes) =<span class="st"> </span><span class="ot">NULL</span>
+<span class="kw">print</span>(signif_genes)</code></pre></div>
+<pre><code>##    gene_name   qglobal_cv
+## 1       TP53 0.000000e+00
+## 2     PIK3CA 0.000000e+00
+## 3       KRAS 0.000000e+00
+## 4        VHL 2.007394e-11
+## 5        APC 5.281677e-10
+## 6     ARID1A 4.679831e-09
+## 7       PTEN 2.403743e-08
+## 8       IDH1 8.742613e-06
+## 9      PBRM1 3.169391e-05
+## 10       RB1 9.215911e-04
+## 11    PIK3R1 9.568278e-04
+## 12    CDKN2A 9.568278e-04
+## 13      BRAF 4.821497e-03
+## 14     KMT2C 2.652243e-02
+## 15     FBXW7 3.287783e-02
+## 16      EGFR 5.088073e-02</code></pre>
+</div>
+<div id="dndscv-outputs-global-dnds-estimates" class="section level5">
+<h5>dndscv outputs: Global dN/dS estimates</h5>
+<p>Another output that can be of interest is a table with the global MLEs for the dN/dS ratios across all genes. dN/dS ratios with associated confidence intervals are calculated for missense, nonsense and essential splice site substitutions separately, as well as for all non-synonymous substitutions (<em>wall</em>) and for all truncating substitutions together (<em>wtru</em>), which include nonsense and essential splice site mutations.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(dndsout$globaldnds)</code></pre></div>
+<pre><code>##      name       mle     cilow   cihigh
+## wmis wmis 1.0222179 0.9855147 1.060288
+## wnon wnon 1.0616564 0.9813078 1.148584
+## wspl wspl 0.9707887 0.8656096 1.088748
+## wtru wtru 1.0326258 0.9651248 1.104848
+## wall wall 1.0241562 0.9879328 1.061708</code></pre>
+<p>Global dN/dS ratios in somatic evolution of cancer, and seemingly of healthy somatic tissues, appear to show a near-universal pattern of dN/dS~1, with exome-wide dN/dS ratios typically slightly higher than 1 (Martincorena <em>et al.</em>, 2017). Only occasionally, I have found datasets with global dN/dS&lt;1, but upon closer examination, this has typically been caused by contamination of the catalogue of somatic mutations with germline SNPs. An exception are melanoma tumours, which show a bias towards slight underestimation of dN/dS due to the signature of ultraviolet-induced mutations extending beyond the trinucleotide model (Martincorena <em>et al.</em>, 2017). In my personal experience, datasets of somatic mutations with global dN/dS&lt;&lt;1 have always reflected a problem of SNP contamination or an inadequate substitution model, and so the evaluation of global dN/dS values can help identify problems in certain datasets.</p>
+</div>
+<div id="other-useful-outputs" class="section level5">
+<h5>Other useful outputs</h5>
+<p>The dndscv function also outputs other results that can be of interest, such as an annotated table of coding mutations (<em>annotmuts</em>), MLEs of mutation rate parameters (<em>mle_submodel</em>), lists of samples and mutations excluded from the analysis and a table with the observed and expected number of mutations per gene (<em>genemuts</em>), among others.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(dndsout$annotmuts)</code></pre></div>
+<pre><code>##   sampleID chr      pos ref mut geneind   gene ref_cod mut_cod strand
+## 1 Sample_1   1   871244   G   C   15262 SAMD11       G       C      1
+## 2 Sample_1   1  6648841   C   G   19346 ZBTB48       C       G      1
+## 3 Sample_1   1 17557072   G   A   12419  PADI1       G       A      1
+## 4 Sample_1   1 22838492   G   C   19338 ZBTB40       G       C      1
+## 5 Sample_1   1 27097733   G   A    1465 ARID1A       G       A      1
+## 6 Sample_1   1 27333206   G   A    6236 FAM46B       C       T     -1
+##   ref3_cod mut3_cod aachange ntchange     impact             pid
+## 1      AGA      ACA    R133T    G398C   Missense ENSP00000342313
+## 2      TCA      TGA    V569V   C1707G Synonymous ENSP00000366902
+## 3      AGA      AAA    E353E   G1059A Synonymous ENSP00000364620
+## 4      GGA      GCA    D776H   G2326C   Missense ENSP00000364798
+## 5      TGA      TAA   E1108K   G3322A   Missense ENSP00000320485
+## 6      TCA      TTA    L169L    C507T Synonymous ENSP00000289166</code></pre>
+<p>dNdScv relies on a negative binomial regression model across genes to refine the estimated background mutation rate for a gene. This assumes that the variation of the mutation rate across genes that remains unexplained by covariates or by the sequence composition of the gene can be modelled as a Gamma distribution. This model typically works well on clean cancer genomic datasets, but not all datasets may be suitable for this model. In particular, very low estimates of <span class="math inline">\(\theta\)</span> (the overdispersion parameter), particularly <span class="math inline">\(\theta&lt;1\)</span>, may reflect problems with the suitability of the dNdScv model for the dataset.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(dndsout$nbreg$theta)</code></pre></div>
+<pre><code>## [1] 5.654063</code></pre>
+</div>
+<div id="dndsloc-local-neutrality-test" class="section level5">
+<h5>dNdSloc: local neutrality test</h5>
+<p>An additional set of neutrality tests per gene are per gene are performed using a more traditional dN/dS model in which the local mutation rate for a gene is estimated exclusively from the synonymous mutations observed in the gene (<em>dNdSloc</em>) (Wong, Martincorena, <em>et al</em>., 2014). This test is typically only powered in very large datasets. For example, in the dataset used in this example, comprising of 196 simulated breast cancer exomes, this model only detects <em>ARID1A</em> as significantly mutated.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">signif_genes_localmodel =<span class="st"> </span><span class="kw">as.vector</span>(dndsout$sel_loc$gene_name[dndsout$sel_loc$qall_loc&lt;<span class="fl">0.1</span>])
+<span class="kw">print</span>(signif_genes_localmodel)</code></pre></div>
+<pre><code>## [1] &quot;ARID1A&quot;</code></pre>
+</div>
+</div>
+</div>
+<div id="example-2-driver-discovery-in-targeted-sequencing-data" class="section level2">
+<h2>Example 2: Driver discovery in targeted sequencing data</h2>
+<p>The dndscv function can take a list of genes as an input to restrict the analysis of selection. This is strictly required when analysing targeted sequencing data, and might also be used to obtain global dN/dS ratios for a particular group of genes.</p>
+<p>To exemplify the use of the dndscv function on targeted data, we can use another example dataset provided with the dNdScv package:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;seqinr&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;Biostrings&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;MASS&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;GenomicRanges&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">data</span>(<span class="st">&quot;dataset_normalskin&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">data</span>(<span class="st">&quot;dataset_normalskin_genes&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+dndsskin =<span class="st"> </span><span class="kw">dndscv</span>(m, <span class="dt">gene_list=</span>target_genes, <span class="dt">max_muts_per_gene_per_sample =</span> <span class="ot">Inf</span>, <span class="dt">max_coding_muts_per_sample =</span> <span class="ot">Inf</span>)</code></pre></div>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Mutations observed in contiguous sites within a sample. Please
+## annotate or remove dinucleotide or complex substitutions for best results.</code></pre>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Same mutations observed in different sampleIDs. Please verify that
+## these are independent events and remove duplicates otherwise.</code></pre>
+<p>This dataset comprises of 3,408 unique somatic mutations detected by ultra-deep (~500x) targeted sequencing of 74 cancer genes in 234 small biopsies of normal human skin (epidermis) from four healthy individuals. Note that all of the mutations listed in the input table are genuinely independent events and so, again, we can safely ignore the two warnings issued by dndscv. For more details on this study see:</p>
+<p><strong>Martincorena I, <em>et al</em>. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. Science. 348(6237):880-6.</strong> doi: 10.1126/science.aaa6806.</p>
+<p>In the paper above, we described a strong evidence of positive selection on somatic mutations occurring in normal human skin throughout life. These mutations are detected as microscopic clones of mutant cells in normal skin. The dNdScv analysis below recapitulates some of the key analyses of selection in this study:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sel_cv =<span class="st"> </span>dndsskin$sel_cv
+<span class="kw">print</span>(<span class="kw">head</span>(sel_cv[sel_cv$qglobal_cv&lt;<span class="fl">0.1</span>,<span class="kw">c</span>(<span class="dv">1</span>:<span class="dv">10</span>,<span class="dv">16</span>,<span class="dv">17</span>)]), <span class="dt">digits =</span> <span class="dv">3</span>)</code></pre></div>
+<pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
+## 47    NOTCH1    20   224    51    32    61    6.00   25.89   25.89  16.853
+## 48    NOTCH2     8   106    21     9    25    5.46   16.14   16.14   7.142
+## 26      FAT1    20    68    26     8    18    1.53   10.06   10.06   2.770
+## 72      TP53     9    43    11     7     7    3.28   13.29   13.29  12.546
+## 49    NOTCH3    15    35     8     2    11    1.13    3.79    3.79   3.345
+## 62     RBM10     6    14     8     2     1    1.28    7.23    7.23   0.759
+##    pglobal_cv qglobal_cv
+## 47   0.00e+00   0.00e+00
+## 48   0.00e+00   0.00e+00
+## 26   1.11e-16   2.74e-15
+## 72   2.95e-13   5.46e-12
+## 49   6.51e-04   9.64e-03
+## 62   1.32e-03   1.62e-02</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(dndsskin$globaldnds, <span class="dt">digits =</span> <span class="dv">3</span>)</code></pre></div>
+<pre><code>##      name  mle cilow cihigh
+## wmis wmis 1.29  1.18   1.42
+## wnon wnon 2.00  1.69   2.36
+## wspl wspl 2.69  2.13   3.39
+## wtru wtru 2.18  1.88   2.52
+## wall wall 1.37  1.25   1.50</code></pre>
+</div>
+<div id="example-3-using-different-substitution-models" class="section level2">
+<h2>Example 3: Using different substitution models</h2>
+<p>Classic maximum-likelihood implementations of dN/dS use a simple substitution model with a single rate parameter. Mutations are classified as either transitions (C&lt;&gt;T, G&lt;&gt;A) or transversions, and the single rate parameter is a transition/transversion (ts/tv) ratio reflecting the relative frequency of both classes of substitutions (Goldman &amp; Yang, 1994). The dndscv function can take a different substitution model as input. The user can choose from existing substitution models provided in the <em>data</em> directory as part of the package or input a different substitution model as a matrix:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;dndscv&quot;</span>)
+<span class="co"># 192 rates (used as default)</span>
+<span class="kw">data</span>(<span class="st">&quot;submod_192r_3w&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">colnames</span>(substmodel) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;syn&quot;</span>,<span class="st">&quot;mis&quot;</span>,<span class="st">&quot;non&quot;</span>,<span class="st">&quot;spl&quot;</span>)
+<span class="kw">head</span>(substmodel)</code></pre></div>
+<pre><code>##      syn         mis              non              spl             
+## [1,] &quot;t*AAA&gt;ACA&quot; &quot;t*AAA&gt;ACA*wmis&quot; &quot;t*AAA&gt;ACA*wnon&quot; &quot;t*AAA&gt;ACA*wspl&quot;
+## [2,] &quot;t*AAA&gt;AGA&quot; &quot;t*AAA&gt;AGA*wmis&quot; &quot;t*AAA&gt;AGA*wnon&quot; &quot;t*AAA&gt;AGA*wspl&quot;
+## [3,] &quot;t*AAA&gt;ATA&quot; &quot;t*AAA&gt;ATA*wmis&quot; &quot;t*AAA&gt;ATA*wnon&quot; &quot;t*AAA&gt;ATA*wspl&quot;
+## [4,] &quot;t*AAC&gt;ACC&quot; &quot;t*AAC&gt;ACC*wmis&quot; &quot;t*AAC&gt;ACC*wnon&quot; &quot;t*AAC&gt;ACC*wspl&quot;
+## [5,] &quot;t*AAC&gt;AGC&quot; &quot;t*AAC&gt;AGC*wmis&quot; &quot;t*AAC&gt;AGC*wnon&quot; &quot;t*AAC&gt;AGC*wspl&quot;
+## [6,] &quot;t*AAC&gt;ATC&quot; &quot;t*AAC&gt;ATC*wmis&quot; &quot;t*AAC&gt;ATC*wnon&quot; &quot;t*AAC&gt;ATC*wspl&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># 12 rates (no context-dependence)</span>
+<span class="kw">data</span>(<span class="st">&quot;submod_12r_3w&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">colnames</span>(substmodel) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;syn&quot;</span>,<span class="st">&quot;mis&quot;</span>,<span class="st">&quot;non&quot;</span>,<span class="st">&quot;spl&quot;</span>)
+<span class="kw">head</span>(substmodel)</code></pre></div>
+<pre><code>##      syn     mis          non          spl         
+## [1,] &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
+## [2,] &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
+## [3,] &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;
+## [4,] &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
+## [5,] &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
+## [6,] &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># 2 rates (classic ts/tv model)</span>
+<span class="kw">data</span>(<span class="st">&quot;submod_2r_3w&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">colnames</span>(substmodel) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;syn&quot;</span>,<span class="st">&quot;mis&quot;</span>,<span class="st">&quot;non&quot;</span>,<span class="st">&quot;spl&quot;</span>)
+<span class="kw">head</span>(substmodel)</code></pre></div>
+<pre><code>##         syn      mis           non           spl          
+## AAA&gt;ACA &quot;t&quot;      &quot;t*wmis&quot;      &quot;t*wnon&quot;      &quot;t*wspl&quot;     
+## AAA&gt;AGA &quot;t*tstv&quot; &quot;t*tstv*wmis&quot; &quot;t*tstv*wnon&quot; &quot;t*tstv*wspl&quot;
+## AAA&gt;ATA &quot;t&quot;      &quot;t*wmis&quot;      &quot;t*wnon&quot;      &quot;t*wspl&quot;     
+## AAC&gt;ACC &quot;t&quot;      &quot;t*wmis&quot;      &quot;t*wnon&quot;      &quot;t*wspl&quot;     
+## AAC&gt;AGC &quot;t*tstv&quot; &quot;t*tstv*wmis&quot; &quot;t*tstv*wnon&quot; &quot;t*tstv*wspl&quot;
+## AAC&gt;ATC &quot;t&quot;      &quot;t*wmis&quot;      &quot;t*wnon&quot;      &quot;t*wspl&quot;</code></pre>
+<p>We can fit a traditional ts/tv model to the skin dataset using the code below:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;seqinr&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;Biostrings&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;MASS&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;GenomicRanges&quot;</span>)
+<span class="kw">library</span>(<span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">data</span>(<span class="st">&quot;dataset_normalskin&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+<span class="kw">data</span>(<span class="st">&quot;dataset_normalskin_genes&quot;</span>, <span class="dt">package=</span><span class="st">&quot;dndscv&quot;</span>)
+dndsskin_2r =<span class="st"> </span><span class="kw">dndscv</span>(m, <span class="dt">gene_list=</span>target_genes, <span class="dt">max_muts_per_gene_per_sample =</span> <span class="ot">Inf</span>, <span class="dt">max_coding_muts_per_sample =</span> <span class="ot">Inf</span>, <span class="dt">sm =</span> <span class="st">&quot;2r_3w&quot;</span>)</code></pre></div>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Mutations observed in contiguous sites within a sample. Please
+## annotate or remove dinucleotide or complex substitutions for best results.</code></pre>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Same mutations observed in different sampleIDs. Please verify that
+## these are independent events and remove duplicates otherwise.</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(dndsskin_2r$mle_submodel)</code></pre></div>
+<pre><code>##   name         mle       cilow      cihigh
+## 1    t 0.001138919 0.001032197 0.001256676
+## 2 tstv 4.034639837 3.734319602 4.359112328
+## 3 wmis 1.249162834 1.142169906 1.366178339
+## 4 wnon 2.847342924 2.438120672 3.325250396
+## 5 wspl 2.182462999 1.766235543 2.696777764</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sel_cv =<span class="st"> </span>dndsskin_2r$sel_cv
+<span class="kw">print</span>(<span class="kw">head</span>(sel_cv[sel_cv$qglobal_cv&lt;<span class="fl">0.1</span>, <span class="kw">c</span>(<span class="dv">1</span>:<span class="dv">10</span>,<span class="dv">16</span>,<span class="dv">17</span>)]), <span class="dt">digits =</span> <span class="dv">3</span>)</code></pre></div>
+<pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
+## 47    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  16.853
+## 48    NOTCH2     8   106    21     9    25    5.54   20.15   20.15   7.142
+## 26      FAT1    20    68    26     8    18    1.44   13.43   13.43   2.770
+## 72      TP53     9    43    11     7     7    3.25   13.69   13.69  12.546
+## 49    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.345
+## 62     RBM10     6    14     8     2     1    1.15    7.14    7.14   0.759
+##    pglobal_cv qglobal_cv
+## 47   0.00e+00   0.00e+00
+## 48   0.00e+00   0.00e+00
+## 26   0.00e+00   0.00e+00
+## 72   2.03e-13   3.75e-12
+## 49   2.89e-04   4.27e-03
+## 62   9.92e-04   1.22e-02</code></pre>
+<p>In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena <em>et al</em>., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller.</p>
+<div id="additional-references" class="section level3">
+<h3>Additional references</h3>
+<ul>
+<li>Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Under review</em>.</li>
+<li>Goldman N, Yang Z. (1994). A codon-based model of nucleotide substitution for protein-coding DNA sequences. <em>Molecular biology and evolution</em>. 11:725-736.</li>
+<li>Greenman C, <em>et al</em>. (2006) Statistical analysis of pathogenicity of somatic mutations in cancer. <em>Genetics</em>. 173(4):2187-98.</li>
+<li>Wong CC, Martincorena I, <em>et al</em>. (2014) Inactivating CUX1 mutations promote tumorigenesis. <em>Nature Genetics</em>. 46(1):33-8.</li>
+<li>Martincorena I, <em>et al</em>. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. <em>Science</em>. 348(6237):880-6.</li>
+</ul>
+</div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
