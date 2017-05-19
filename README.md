@@ -34,3 +34,9 @@ You can use devtools::github_install() to install *dndscv* from this repository:
 Reference
 ----
 Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
+
+
+Acknowledgements
+--------
+
+Moritz Gerstung!

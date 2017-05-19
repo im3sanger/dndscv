@@ -8,7 +8,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, *dNdScv* uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman *et al.*, 2006).
+The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. 
+
+The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, *dNdScv* uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman *et al.*, 2006).
 
 This vignette shows how to perform driver discovery and selection analyses with dNdScv in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species.
 
@@ -53,6 +55,8 @@ rownames(signif_genes) = NULL
 print(signif_genes)
 ```
 
+Note in the table that the dN/dS ratios of significant cancer genes are typically extremely high, often >10 or even >100. This contains information about the fraction of mutations observed in a gene that are genuine drivers under positive selection. For example, for a highly significant gene, a dN/dS of 10 indicates that there are 10 times more non-synonymous mutations in the gene than neutrally expected, suggesting that at least around 90% of these mutations are genuine drivers (Greenman *et al*, 2006; Martincorena *et al*, 2017).
+
 #####dndscv outputs: Global dN/dS estimates
 
 Another output that can be of interest is a table with the global MLEs for the dN/dS ratios across all genes. dN/dS ratios with associated confidence intervals are calculated for missense, nonsense and essential splice site substitutions separately, as well as for all non-synonymous substitutions (*wall*) and for all truncating substitutions together (*wtru*), which include nonsense and essential splice site mutations.
@@ -79,7 +83,7 @@ print(dndsout$nbreg$theta)
 
 ##### dNdSloc: local neutrality test
 
-An additional set of neutrality tests per gene are per gene are performed using a more traditional dN/dS model in which the local mutation rate for a gene is estimated exclusively from the synonymous mutations observed in the gene (*dNdSloc*) (Wong, Martincorena, *et al*., 2014). This test is typically only powered in very large datasets. For example, in the dataset used in this example, comprising of 196 simulated breast cancer exomes, this model only detects *ARID1A* as significantly mutated.
+An additional set of neutrality tests per gene are performed using a more traditional dN/dS model in which the local mutation rate for a gene is estimated exclusively from the synonymous mutations observed in the gene (*dNdSloc*) (Wong, Martincorena, *et al*., 2014). This test is typically only powered in very large datasets. For example, in the dataset used in this example, comprising of 196 simulated breast cancer exomes, this model only detects *ARID1A* as significantly mutated.
 
 ```{r}
 signif_genes_localmodel = as.vector(dndsout$sel_loc$gene_name[dndsout$sel_loc$qall_loc<0.1])
