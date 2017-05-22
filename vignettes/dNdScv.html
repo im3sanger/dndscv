@@ -76,8 +76,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, <em>dNdScv</em> uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman <em>et al.</em>, 2006).</p>
 <p>This vignette shows how to perform driver discovery and selection analyses with dNdScv in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species.</p>
 <p>Main reference: Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Under review</em>.</p>
-<div id="example-1-driver-discovery-positive-selection-in-cancer-cancer-exomesgenomes" class="section level2">
-<h2>Example 1: Driver discovery (positive selection) in cancer cancer exomes/genomes</h2>
+<div id="example-1-driver-discovery-positive-selection-in-cancer-exomesgenomes" class="section level2">
+<h2>Example 1: Driver discovery (positive selection) in cancer exomes/genomes</h2>
 <div id="the-simplest-way-to-run-dndscv" class="section level4">
 <h4>The simplest way to run dNdScv</h4>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;seqinr&quot;</span>)

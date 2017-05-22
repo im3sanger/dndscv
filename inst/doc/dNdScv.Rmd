@@ -17,7 +17,7 @@ This vignette shows how to perform driver discovery and selection analyses with 
 Main reference:
 Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
 
-##Example 1: Driver discovery (positive selection) in cancer cancer exomes/genomes
+##Example 1: Driver discovery (positive selection) in cancer exomes/genomes
 
 ####The simplest way to run dNdScv
 
