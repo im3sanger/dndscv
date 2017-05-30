@@ -237,8 +237,12 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         mutations = mutations[is.na(wrong_ref),]
     }
     
-    indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", strand=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
-    annot = rbind(mutations, indels)
+    if (any(nrow(indels))) { # If there are indels we concatenate the tables of subs and indels
+        indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", strand=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
+        annot = rbind(mutations, indels)
+    } else {
+        annot = mutations
+    }
     annot = annot[order(annot$sampleID, annot$chr, annot$pos),]
     
     
