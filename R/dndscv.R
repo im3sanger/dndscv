@@ -258,10 +258,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     fit_substmodel = function(N, L, substmodel) {
     
-        l = sapply(split(c(L), f=c(substmodel)), sum)
-        n = sapply(split(c(N), f=c(substmodel)), sum)[l>0]
-        r = names(l)[l>0]
-        l = l[l>0]
+        l = c(L); n = c(N); r = c(substmodel)
+        n = n[l!=0]; r = r[l!=0]; l = l[l!=0]
         
         params = unique(base::strsplit(x=paste(r,collapse="*"), split="\\*")[[1]])
         indmat = as.data.frame(array(0, dim=c(length(r),length(params))))
