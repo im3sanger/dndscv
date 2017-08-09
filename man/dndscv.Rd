@@ -58,6 +58,8 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
 - nbreg: Negative binomial regression model for substitutions.
 
 - nbregind: Negative binomial regression model for indels.
+
+- poissmodel: Poisson regression model used to fit the substitution model and the global dNdS values.
 }
 \description{
 Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
