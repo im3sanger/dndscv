@@ -30,6 +30,7 @@
 #' @return - exclmuts: Coding mutations excluded from the analysis.
 #' @return - nbreg: Negative binomial regression model for substitutions.
 #' @return - nbregind: Negative binomial regression model for indels.
+#' @return - poissmodel: Poisson regression model used to fit the substitution model and the global dNdS values.
 #' 
 #' @export
 
