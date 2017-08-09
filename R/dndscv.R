@@ -38,6 +38,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     ## 1. Environment
     message("[1] Loading the environment...")
 
+    mutations[,c(1,2,4,5)] = lapply(m[,c(1,2,4,5)], as.character) # Factors to character
+    
     # [Input] Reference database
     if (refdb == "hg19") {
         data("refcds_hg19", package="dndscv")
