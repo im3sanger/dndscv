@@ -20,9 +20,8 @@ The background mutation rate of each gene is estimated by combining local inform
 
 Note
 ----
-Beta version. New functionalities will soon be added to this R package, including 
-support for other genome assemblies or species and to allow flexible inferences of 
-selection on input fasta files.
+New functionalities will soon be added to this R package, including support for other 
+human genome assemblies and other species. 
 
 Installation
 --------
@@ -33,10 +32,10 @@ You can use devtools::install_github() to install *dndscv* from this repository:
 	
 Reference
 ----
-Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
+Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
 
 
 Acknowledgements
 --------
 
-Moritz Gerstung!
+Moritz Gerstung and Peter Campbell.
