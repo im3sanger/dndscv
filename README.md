@@ -27,7 +27,7 @@ selection on input fasta files.
 Installation
 --------
 
-You can use devtools::github_install() to install *dndscv* from this repository:
+You can use devtools::install_github() to install *dndscv* from this repository:
 
 	> library(devtools); install_github("im3sanger/dndscv")
 	

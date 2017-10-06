@@ -1,32 +1,33 @@
 ---
 title: "Selection analyses and cancer driver discovery using dNdScv"
 author: "Inigo Martincorena (May 2017)"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Selection analyses and cancer driver discovery using dNdScv}
-  %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
-The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. 
+The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. These functions can also be used in other types of reseq
 
-The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, *dNdScv* uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman *et al.*, 2006).
+Unlike traditional implementations of dN/dS, the *dNdScv* package uses trinucleotide context-dependent substitution models to avoid common mutation biases affecting dN/dS (Greenman *et al.*, 2006, Martincorena *et al.*, 2017). The package includes two different dN/dS models. *dNdSloc*, like traditional dN/dS implementations, uses the number of synonymous mutations in a gene to infer the local mutation rate, without exploiting additional information from other genes. *dNdScv* offers a much more powerful alternative, combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates) to estimate the background mutation rate. *dNdScv* should be preferred in most situations.
 
-This vignette shows how to perform driver discovery and selection analyses with dNdScv in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species.
+This vignette shows how to perform driver discovery and selection analyses with *dNdScv* in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species. Although designed for cancer genomic studies, *dNdScv* could be used to quantify selection in other resequencing studies, such as SNP analyses, mutation accumulation studies in bacteria or for the discovery of developmental mutations from human trios.
 
-Main reference:
-Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
+To cite this package please use:
+Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
 
-##Example 1: Driver discovery (positive selection) in cancer exomes/genomes
+##Driver discovery (positive selection) in cancer exomes/genomes
 
 ####The simplest way to run dNdScv
 
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 library("seqinr")
 library("Biostrings")
 library("MASS")
 library("GenomicRanges")
 library("dndscv")
+```
+```{r message=FALSE}
 data("dataset_simbreast", package="dndscv")
 dndsout = dndscv(mutations)
 ```
@@ -90,7 +91,7 @@ signif_genes_localmodel = as.vector(dndsout$sel_loc$gene_name[dndsout$sel_loc$qa
 print(signif_genes_localmodel)
 ```
 
-##Example 2: Driver discovery in targeted sequencing data
+##Driver discovery in targeted sequencing data
 
 The dndscv function can take a list of genes as an input to restrict the analysis of selection. This is strictly required when analysing targeted sequencing data, and might also be used to obtain global dN/dS ratios for a particular group of genes.
 
@@ -119,7 +120,7 @@ print(head(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,16,17)]), digits = 3)
 print(dndsskin$globaldnds, digits = 3)
 ```
 
-##Example 3: Using different substitution models
+##Using different substitution models
 
 Classic maximum-likelihood implementations of dN/dS use a simple substitution model with a single rate parameter. Mutations are classified as either transitions (C<>T, G<>A) or transversions, and the single rate parameter is a transition/transversion (ts/tv) ratio reflecting the relative frequency of both classes of substitutions (Goldman & Yang, 1994). The dndscv function can take a different substitution model as input. The user can choose from existing substitution models provided in the *data* directory as part of the package or input a different substitution model as a matrix:
 
@@ -155,10 +156,15 @@ sel_cv = dndsskin_2r$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv<0.1, c(1:10,16,17)]), digits = 3)
 ```
 
-In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena *et al*., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller.
+In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena *et al*., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller. AIC model selection can be easily used:
 
-###Additional references
-* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
+```{r message=FALSE}
+AIC(dndsskin$poissmodel)
+AIC(dndsskin_2r$poissmodel)
+```
+
+###References
+* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
 * Goldman N, Yang Z. (1994). A codon-based model of nucleotide substitution for protein-coding DNA sequences. *Molecular biology and evolution*. 11:725-736.
 * Greenman C, *et al*. (2006) Statistical analysis of pathogenicity of somatic mutations in cancer. *Genetics*. 173(4):2187-98.
 * Wong CC, Martincorena I, *et al*. (2014) Inactivating CUX1 mutations promote tumorigenesis. *Nature Genetics*. 46(1):33-8.
