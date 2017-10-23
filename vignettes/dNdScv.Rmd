@@ -1,6 +1,6 @@
 ---
 title: "Selection analyses and cancer driver discovery using dNdScv"
-author: "Inigo Martincorena (May 2017)"
+author: "Inigo Martincorena"
 output: 
   html_document:
     toc: true
