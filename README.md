@@ -38,7 +38,8 @@ examples for whole-exome/genome data and for targeted data.
 
 Reference
 ----
-Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. [*Cell*](http://www.cell.com/cell/abstract/S0092-8674(17\)31136-4).
+Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
+http://www.cell.com/cell/abstract/S0092-8674(17)31136-4
 
 Acknowledgements
 --------
