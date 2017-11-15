@@ -116,7 +116,7 @@ In the paper above, we described a strong evidence of positive selection on soma
 
 ```{r}
 sel_cv = dndsskin$sel_cv
-print(head(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,16,17)]), digits = 3)
+print(head(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,19)]), digits = 3)
 print(dndsskin$globaldnds, digits = 3)
 ```
 
@@ -153,7 +153,7 @@ data("dataset_normalskin_genes", package="dndscv")
 dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf, sm = "2r_3w")
 print(dndsskin_2r$mle_submodel)
 sel_cv = dndsskin_2r$sel_cv
-print(head(sel_cv[sel_cv$qglobal_cv<0.1, c(1:10,16,17)]), digits = 3)
+print(head(sel_cv[sel_cv$qglobal_cv<0.1, c(1:10,19)]), digits = 3)
 ```
 
 In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena *et al*., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller. AIC model selection can be easily used:

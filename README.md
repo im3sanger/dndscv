@@ -25,15 +25,20 @@ human genome assemblies and other species.
 
 Installation
 --------
-
 You can use devtools::install_github() to install *dndscv* from this repository:
 
 	> library(devtools); install_github("im3sanger/dndscv")
-	
+
+Tutorial
+--------
+For a tutorial on dNdScv see the vignette included with the package. This includes 
+examples for whole-exome/genome data and for targeted data.
+
+[Tutorial: getting started with dNdScv](http://htmlpreview.github.io/?http://github.com/im3sanger/dndscv/blob/master/vignettes/dNdScv.html)
+
 Reference
 ----
 Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
-
 
 Acknowledgements
 --------
