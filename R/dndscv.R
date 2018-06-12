@@ -235,7 +235,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     mutations$pid = sapply(RefCDS,function(x) x$protein_id)[mutations$geneind]
     
     if (any(!is.na(wrong_ref))) {
-        stop(sprintf('%0.0f mutations have a wrong reference base, please correct and rerun.',sum(!is.na(wrong_ref)))) # This can be made into a mere warning and the rest of the code will work
+        #stop(sprintf('%0.0f mutations have a wrong reference base, please correct and rerun.',sum(!is.na(wrong_ref)))) # This can be made into a mere warning and the rest of the code will work
+        message(sprintf('    Note: %0.0f mutations have a wrong reference base, they were excluded from the analysis',sum(!is.na(wrong_ref)))) #warns instead of stopping program
         wrong_refbase = mutations[!is.na(wrong_ref),]
         mutations = mutations[is.na(wrong_ref),]
     }
