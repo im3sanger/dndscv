@@ -3,7 +3,7 @@
 #' Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
 #'
 #' @author Inigo Martincorena (Wellcome Trust Sanger Institute)
-#' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Under revision. Preprint available in BioRxiv: https://doi.org/10.1101/132324
+#' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
 #' 
 #' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
 #' @param gene_list List of genes to restrict the analysis (use for targeted sequencing studies)
@@ -235,8 +235,12 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     mutations$pid = sapply(RefCDS,function(x) x$protein_id)[mutations$geneind]
     
     if (any(!is.na(wrong_ref))) {
-        stop(sprintf('%0.0f mutations have a wrong reference base, please correct and rerun.',sum(!is.na(wrong_ref)))) # This can be made into a mere warning and the rest of the code will work
-        wrong_refbase = mutations[!is.na(wrong_ref),]
+        if (mean(!is.na(wrong_ref)) < 0.1) { # If fewer than 10% of mutations have a wrong reference base, we warn the user
+            warning(sprintf('%0.0f (%0.2g%%) mutations have a wrong reference base (see the affected mutations in dndsout$wrongmuts). Please identify the causes and rerun dNdScv.', sum(!is.na(wrong_ref)), 100*mean(!is.na(wrong_ref))))
+        } else { # If more than 10% of mutations have a wrong reference base, we stop the execution (likely wrong assembly or a serious problem with the data)
+            stop(sprintf('%0.0f (%0.2g%%) mutations have a wrong reference base. Please confirm that you are not running data from a different assembly or species.', sum(!is.na(wrong_ref)), 100*mean(!is.na(wrong_ref))))
+        }
+        wrong_refbase = mutations[!is.na(wrong_ref), 1:5]
         mutations = mutations[is.na(wrong_ref),]
     }
     
@@ -505,6 +509,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         }
     }
     
-    dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel)
+    if (nrow(wrong_refbase)==0) {
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel)
+    } else {
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase)
+    }
     
 } # EOF
