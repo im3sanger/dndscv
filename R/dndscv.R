@@ -2,7 +2,7 @@
 #'
 #' Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
 #'
-#' @author Inigo Martincorena (Wellcome Trust Sanger Institute)
+#' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
 #' 
 #' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
@@ -18,6 +18,7 @@
 #' @param maxcovs Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)
 #' @param constrain_wnon_wspl This constrains wnon==wspl (this typically leads to higher power to detect selection)
 #' @param outp Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv
+#' @param numcode NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.
 #'
 #' @return 'dndscv' returns a list of objects:
 #' @return - globaldnds: Global dN/dS estimates across all genes.
@@ -31,10 +32,11 @@
 #' @return - nbreg: Negative binomial regression model for substitutions.
 #' @return - nbregind: Negative binomial regression model for indels.
 #' @return - poissmodel: Poisson regression model used to fit the substitution model and the global dNdS values.
+#' @return - wrongmuts: Table of input mutations with a wrong annotation of the reference base (if any). 
 #' 
 #' @export
 
-dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3) {
+dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1) {
 
     ## 1. Environment
     message("[1] Loading the environment...")
@@ -175,7 +177,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     # Annotating the functional impact of each substitution and populating the N matrices
     
-    ref3_cod = mut3_cod = wrong_ref = aachange = ntchange = impact = array(NA, nrow(mutations))
+    ref3_cod = mut3_cod = wrong_ref = aachange = ntchange = impact = codonsub = array(NA, nrow(mutations))
     
     for (j in 1:nrow(mutations)) {
     
@@ -200,10 +202,11 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             old_codon = as.character(as.vector(RefCDS[[geneind]]$seq_cds[codon_pos]))
             pos_in_codon = pos_ind-(ceiling(pos_ind/3)-1)*3
             new_codon = old_codon; new_codon[pos_in_codon] = mutations$mut_cod[j]
-            old_aa = seqinr::translate(old_codon)
-            new_aa = seqinr::translate(new_codon)
+            old_aa = seqinr::translate(old_codon, numcode = numcode)
+            new_aa = seqinr::translate(new_codon, numcode = numcode)
             aachange[j] = sprintf('%s%0.0f%s',old_aa,ceiling(pos_ind/3),new_aa)
             ntchange[j] = sprintf('%s%0.0f%s',mutations$ref_cod[j],pos_ind,mutations$mut_cod[j])
+            codonsub[j] = sprintf('%s>%s',paste(old_codon,collapse=""),paste(new_codon,collapse=""))
         
             # Annotating the impact of the mutation
             if (new_aa == old_aa){ 
@@ -231,6 +234,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     mutations$mut3_cod = mut3_cod
     mutations$aachange = aachange
     mutations$ntchange = ntchange
+    mutations$codonsub = codonsub
     mutations$impact = impact
     mutations$pid = sapply(RefCDS,function(x) x$protein_id)[mutations$geneind]
     
@@ -245,7 +249,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
     
     if (any(nrow(indels))) { # If there are indels we concatenate the tables of subs and indels
-        indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", strand=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
+        indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", strand=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", codonsub=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
         annot = rbind(mutations, indels)
     } else {
         annot = mutations
@@ -509,10 +513,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         }
     }
     
-    if (nrow(wrong_refbase)==0) {
-        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel)
-    } else {
+    if (any(!is.na(wrong_ref))) {
         dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase)
+    } else {
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel)
     }
     
 } # EOF
