@@ -17,11 +17,10 @@
 #' @docType package
 #' @title Detection of selection in cancer and somatic evolution
 #' @author Inigo Martincorena, Wellcome Trust Sanger Institute, \email{im3@@sanger.ac.uk}
-#' @references Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Under review.
+#' @references Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Cell.
 #' @keywords package
 #' @seealso \code{\link{dndscv}}
 #' @import seqinr
-#' @import Biostrings
 #' @import MASS
 #' @import GenomicRanges
 NA

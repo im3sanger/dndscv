@@ -21,10 +21,6 @@ Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and So
 ####The simplest way to run dNdScv
 
 ```{r message=FALSE, warning=FALSE}
-library("seqinr")
-library("Biostrings")
-library("MASS")
-library("GenomicRanges")
 library("dndscv")
 ```
 ```{r message=FALSE}

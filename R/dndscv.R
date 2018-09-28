@@ -123,8 +123,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
     
     # Mapping mutations to genes
-    gr_muts = GRanges(mutations$chr, IRanges(mutations$pos,mutations$pos))
-    ol = as.matrix(findOverlaps(gr_muts, gr_genes, type="any", select="all"))
+    gr_muts = GenomicRanges::GRanges(mutations$chr, IRanges::IRanges(mutations$pos,mutations$pos))
+    ol = as.matrix(GenomicRanges::findOverlaps(gr_muts, gr_genes, type="any", select="all"))
     mutations = mutations[ol[,1],] # Duplicating subs if they hit more than one gene
     mutations$geneind = gr_genes_ind[ol[,2]]
     mutations$gene = sapply(RefCDS,function(x) x$gene_name)[mutations$geneind]
@@ -354,10 +354,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         
         message("[5] Running dNdScv...")
     
-         # Covariates
+        # Covariates
         if (is.null(cv)) {
             nbrdf = genemuts[,c("n_syn","exp_syn")]
-            model = glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
+            model = MASS::glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
             message(sprintf("    Regression model for substitutions: no covariates were used (theta = %0.3g).", model$theta))
         } else {
             covs = covs[genemuts$gene_name,]
@@ -368,9 +368,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             nbrdf = cbind(genemuts[,c("n_syn","exp_syn")], covs)
             
             # Negative binomial regression
-            model = suppressWarnings(glm.nb(n_syn ~ offset(log(exp_syn)) + . , data = nbrdf))
+            model = suppressWarnings(MASS::glm.nb(n_syn ~ offset(log(exp_syn)) + . , data = nbrdf))
             if (!is.null(model$th.warn) | nrow(genemuts)<500) { # If there are warnings or if <500 genes, we run the regression without covariates
-                model = glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
+                model = MASS::glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
                 message(sprintf("    Regression model for substitutions: no covariates were used (theta = %0.3g).", model$theta))
             } else {
                 message(sprintf("    Regression model for substitutions: all covariates were used (theta = %0.3g).", model$theta))
@@ -449,7 +449,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         sel_cv$qallsubs_cv = p.adjust(sel_cv$pallsubs_cv, method="BH")
         sel_cv = cbind(genemuts[,1:5],sel_cv)
         sel_cv = sel_cv[order(sel_cv$pallsubs_cv, sel_cv$pmis_cv, sel_cv$ptrunc_cv, -sel_cv$wmis_cv),] # Sorting genes in the output file
-    
+        
         ## Indel recurrence: based on a negative binomial regression (ideally fitted excluding major known driver genes)
         
         if (nrow(indels) >= min_indels) {
@@ -476,15 +476,15 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             
             if (is.null(cv)) {
                 nbrdf = geneindels[,c("n_indused","exp_unif")][!geneindels[,6],] # We exclude known drivers from the fit
-                model = suppressWarnings(glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
-                model = glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
+                model = suppressWarnings(MASS::glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
+                model = MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
                 message(sprintf("    Regression model for indels: no covariates were used (theta = %0.3g)", model$theta))
                 nbrdf_all = geneindels[,c("n_indused","exp_unif")]
             } else {
                 nbrdf = cbind(geneindels[,c("n_indused","exp_unif")], covs)[!geneindels[,6],] # We exclude known drivers from the fit
-                model = suppressWarnings(glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
+                model = suppressWarnings(MASS::glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
                 if (!is.null(model$th.warn) | nrow(genemuts)<500) { # If there are warnings or if <500 genes, we run the regression without covariates
-                    model = glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
+                    model = MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
                     message(sprintf("    Regression model for indels: no covariates were used (theta = %0.3g)", model$theta))
                 } else {
                     message(sprintf("    Regression model for indels: all covariates were used (theta = %0.3g)", model$theta))

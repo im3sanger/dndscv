@@ -9,7 +9,6 @@ Description: This package contains functions for studying selection on coding se
 Reference: Martincorena I et al, 2017. Universal patterns of selection in cancer and somatic tissues. Cell. https://www.ncbi.nlm.nih.gov/pubmed/29056346
 Imports:
   seqinr,
-  Biostrings,
   MASS,
   GenomicRanges
 LazyData: false
