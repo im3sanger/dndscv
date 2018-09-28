@@ -228,11 +228,7 @@ div.tocify {
 <h2>Driver discovery (positive selection) in cancer exomes/genomes</h2>
 <div id="the-simplest-way-to-run-dndscv" class="section level4">
 <h4>The simplest way to run dNdScv</h4>
-<pre class="r"><code>library(&quot;seqinr&quot;)
-library(&quot;Biostrings&quot;)
-library(&quot;MASS&quot;)
-library(&quot;GenomicRanges&quot;)
-library(&quot;dndscv&quot;)</code></pre>
+<pre class="r"><code>library(&quot;dndscv&quot;)</code></pre>
 <pre class="r"><code>data(&quot;dataset_simbreast&quot;, package=&quot;dndscv&quot;)
 dndsout = dndscv(mutations)</code></pre>
 <pre><code>## Warning in dndscv(mutations): Same mutations observed in different
@@ -254,7 +250,7 @@ dndsout = dndscv(mutations)</code></pre>
 <p>We have run dNdScv with default parameters. This includes removing ultra-hypermutator samples and subsampling mutations when encountering too many mutations per gene in the same sample. These were designed to protect against loss of sensitivity from ultra-hypermutators and from clustered artefacts in the input mutation table, but there are occasions when the user will prefer to relax these (see Example 2).</p>
 <div id="dndscv-outputs-table-of-significant-genes" class="section level5">
 <h5>dndscv outputs: Table of significant genes</h5>
-<p>The output of the <em>dndscv</em> function is a list of objects. For an analysis of exome or genome data, the most relevant output will often be the result of neutrality tests at gene level. <em>P-values</em> for substitutions are obtained by Likelihood-Ratio Tests as described in (Martincorena <em>et al</em>, 2017) and q-values are obtained by Benjamini-Hodgberg’s multiple testing correction. The table also includes information on the number of substitutions of each class observed in each gene, as well as maximum-likelihood estimates (MLEs) of the dN/dS ratios for each gene, for missense (<em>wmis</em>), nonsense (<em>wnon</em>), essential splice site mutations (<em>wspl</em>) and indels (<em>wind</em>).</p>
+<p>The output of the <em>dndscv</em> function is a list of objects. For an analysis of exome or genome data, the most relevant output will often be the result of neutrality tests at gene level. <em>P-values</em> for substitutions are obtained by Likelihood-Ratio Tests as described in (Martincorena <em>et al</em>, 2017) and q-values are obtained by Benjamini-Hodgberg’s multiple testing correction. The table also includes information on the number of substitutions of each class observed in each gene, as well as maximum-likelihood estimates (MLEs) of the dN/dS ratios for each gene, for missense (<em>wmis</em>), nonsense (<em>wnon</em>), essential splice site mutations (<em>wspl</em>) and indels (<em>wind</em>). The global q-value integrating all mutation types are available in the <em>qglobal_cv</em> and <em>qallsubs_cv</em> columns for analyses with and without indels, respectively.</p>
 <pre class="r"><code>sel_cv = dndsout$sel_cv
 print(head(sel_cv), digits = 3)</code></pre>
 <pre><code>##       gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv
@@ -323,13 +319,13 @@ print(signif_genes)</code></pre>
 ## 4 Sample_1   1 22838492   G   C   19338 ZBTB40       G       C      1
 ## 5 Sample_1   1 27097733   G   A    1465 ARID1A       G       A      1
 ## 6 Sample_1   1 27333206   G   A    6236 FAM46B       C       T     -1
-##   ref3_cod mut3_cod aachange ntchange     impact             pid
-## 1      AGA      ACA    R133T    G398C   Missense ENSP00000342313
-## 2      TCA      TGA    V569V   C1707G Synonymous ENSP00000366902
-## 3      AGA      AAA    E353E   G1059A Synonymous ENSP00000364620
-## 4      GGA      GCA    D776H   G2326C   Missense ENSP00000364798
-## 5      TGA      TAA   E1108K   G3322A   Missense ENSP00000320485
-## 6      TCA      TTA    L169L    C507T Synonymous ENSP00000289166</code></pre>
+##   ref3_cod mut3_cod aachange ntchange codonsub     impact             pid
+## 1      AGA      ACA    R133T    G398C  AGA&gt;ACA   Missense ENSP00000342313
+## 2      TCA      TGA    V569V   C1707G  GTC&gt;GTG Synonymous ENSP00000366902
+## 3      AGA      AAA    E353E   G1059A  GAG&gt;GAA Synonymous ENSP00000364620
+## 4      GGA      GCA    D776H   G2326C  GAT&gt;CAT   Missense ENSP00000364798
+## 5      TGA      TAA   E1108K   G3322A  GAA&gt;AAA   Missense ENSP00000320485
+## 6      TCA      TTA    L169L    C507T  CTC&gt;CTT Synonymous ENSP00000289166</code></pre>
 <p>dNdScv relies on a negative binomial regression model across genes to refine the estimated background mutation rate for a gene. This assumes that the variation of the mutation rate across genes that remains unexplained by covariates or by the sequence composition of the gene can be modelled as a Gamma distribution. This model typically works well on clean cancer genomic datasets, but not all datasets may be suitable for this model. In particular, very low estimates of <span class="math inline">\(\theta\)</span> (the overdispersion parameter), particularly <span class="math inline">\(\theta&lt;1\)</span>, may reflect problems with the suitability of the dNdScv model for the dataset.</p>
 <pre class="r"><code>print(dndsout$nbreg$theta)</code></pre>
 <pre><code>## [1] 5.654063</code></pre>
@@ -347,11 +343,7 @@ print(signif_genes_localmodel)</code></pre>
 <h2>Driver discovery in targeted sequencing data</h2>
 <p>The dndscv function can take a list of genes as an input to restrict the analysis of selection. This is strictly required when analysing targeted sequencing data, and might also be used to obtain global dN/dS ratios for a particular group of genes.</p>
 <p>To exemplify the use of the dndscv function on targeted data, we can use another example dataset provided with the dNdScv package:</p>
-<pre class="r"><code>library(&quot;seqinr&quot;)
-library(&quot;Biostrings&quot;)
-library(&quot;MASS&quot;)
-library(&quot;GenomicRanges&quot;)
-library(&quot;dndscv&quot;)
+<pre class="r"><code>library(&quot;dndscv&quot;)
 data(&quot;dataset_normalskin&quot;, package=&quot;dndscv&quot;)
 data(&quot;dataset_normalskin_genes&quot;, package=&quot;dndscv&quot;)
 dndsskin = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)</code></pre>
@@ -426,11 +418,7 @@ head(substmodel)</code></pre>
 ## AAC&gt;AGC &quot;t*tstv&quot; &quot;t*tstv*wmis&quot; &quot;t*tstv*wnon&quot; &quot;t*tstv*wspl&quot;
 ## AAC&gt;ATC &quot;t&quot;      &quot;t*wmis&quot;      &quot;t*wnon&quot;      &quot;t*wspl&quot;</code></pre>
 <p>We can fit a traditional ts/tv model to the skin dataset using the code below:</p>
-<pre class="r"><code>library(&quot;seqinr&quot;)
-library(&quot;Biostrings&quot;)
-library(&quot;MASS&quot;)
-library(&quot;GenomicRanges&quot;)
-library(&quot;dndscv&quot;)
+<pre class="r"><code>library(&quot;dndscv&quot;)
 data(&quot;dataset_normalskin&quot;, package=&quot;dndscv&quot;)
 data(&quot;dataset_normalskin_genes&quot;, package=&quot;dndscv&quot;)
 dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf, sm = &quot;2r_3w&quot;)</code></pre>
@@ -471,7 +459,7 @@ print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1, c(1:10,19)]), digits = 3)</code></pr
 <div id="references" class="section level3">
 <h3>References</h3>
 <ul>
-<li>Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Cell</em>.</li>
+<li>Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Cell</em>. 171(5):1029-1041.</li>
 <li>Goldman N, Yang Z. (1994). A codon-based model of nucleotide substitution for protein-coding DNA sequences. <em>Molecular biology and evolution</em>. 11:725-736.</li>
 <li>Greenman C, <em>et al</em>. (2006) Statistical analysis of pathogenicity of somatic mutations in cancer. <em>Genetics</em>. 173(4):2187-98.</li>
 <li>Wong CC, Martincorena I, <em>et al</em>. (2014) Inactivating CUX1 mutations promote tumorigenesis. <em>Nature Genetics</em>. 46(1):33-8.</li>

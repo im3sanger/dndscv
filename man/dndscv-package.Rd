@@ -18,7 +18,7 @@ from a few samples to thousands of samples, in whole-exome/genome or targeted
 sequencing studies.
 }
 \references{
-Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Under review.
+Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Cell.
 }
 \seealso{
 \code{\link{dndscv}}

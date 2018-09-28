@@ -7,7 +7,7 @@
 dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
   kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3,
   max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5,
-  maxcovs = 20, constrain_wnon_wspl = T, outp = 3)
+  maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1)
 }
 \arguments{
 \item{mutations}{Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.}
@@ -35,6 +35,8 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
 \item{constrain_wnon_wspl}{This constrains wnon==wspl (this typically leads to higher power to detect selection)}
 
 \item{outp}{Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv}
+
+\item{numcode}{NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.}
 }
 \value{
 'dndscv' returns a list of objects:
@@ -60,13 +62,15 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
 - nbregind: Negative binomial regression model for indels.
 
 - poissmodel: Poisson regression model used to fit the substitution model and the global dNdS values.
+
+- wrongmuts: Table of input mutations with a wrong annotation of the reference base (if any).
 }
 \description{
 Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
 }
 \details{
-Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Under revision. Preprint available in BioRxiv: https://doi.org/10.1101/132324
+Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
 }
 \author{
-Inigo Martincorena (Wellcome Trust Sanger Institute)
+Inigo Martincorena (Wellcome Sanger Institute)
 }

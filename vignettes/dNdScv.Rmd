@@ -42,7 +42,7 @@ We have run dNdScv with default parameters. This includes removing ultra-hypermu
 
 #####dndscv outputs: Table of significant genes
 
-The output of the *dndscv* function is a list of objects. For an analysis of exome or genome data, the most relevant output will often be the result of neutrality tests at gene level. *P-values* for substitutions are obtained by Likelihood-Ratio Tests as described in (Martincorena *et al*, 2017) and q-values are obtained by Benjamini-Hodgberg's multiple testing correction. The table also includes information on the number of substitutions of each class observed in each gene, as well as maximum-likelihood estimates (MLEs) of the dN/dS ratios for each gene, for missense (*wmis*), nonsense (*wnon*), essential splice site mutations (*wspl*) and indels (*wind*).
+The output of the *dndscv* function is a list of objects. For an analysis of exome or genome data, the most relevant output will often be the result of neutrality tests at gene level. *P-values* for substitutions are obtained by Likelihood-Ratio Tests as described in (Martincorena *et al*, 2017) and q-values are obtained by Benjamini-Hodgberg's multiple testing correction. The table also includes information on the number of substitutions of each class observed in each gene, as well as maximum-likelihood estimates (MLEs) of the dN/dS ratios for each gene, for missense (*wmis*), nonsense (*wnon*), essential splice site mutations (*wspl*) and indels (*wind*). The global q-value integrating all mutation types are available in the *qglobal_cv* and *qallsubs_cv* columns for analyses with and without indels, respectively.
 
 ```{r}
 sel_cv = dndsout$sel_cv
@@ -94,10 +94,6 @@ The dndscv function can take a list of genes as an input to restrict the analysi
 To exemplify the use of the dndscv function on targeted data, we can use another example dataset provided with the dNdScv package:
 
 ```{r message=FALSE}
-library("seqinr")
-library("Biostrings")
-library("MASS")
-library("GenomicRanges")
 library("dndscv")
 data("dataset_normalskin", package="dndscv")
 data("dataset_normalskin_genes", package="dndscv")
@@ -139,10 +135,6 @@ head(substmodel)
 We can fit a traditional ts/tv model to the skin dataset using the code below:
 
 ```{r message=FALSE}
-library("seqinr")
-library("Biostrings")
-library("MASS")
-library("GenomicRanges")
 library("dndscv")
 data("dataset_normalskin", package="dndscv")
 data("dataset_normalskin_genes", package="dndscv")
@@ -160,7 +152,7 @@ AIC(dndsskin_2r$poissmodel)
 ```
 
 ###References
-* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
+* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*. 171(5):1029-1041.
 * Goldman N, Yang Z. (1994). A codon-based model of nucleotide substitution for protein-coding DNA sequences. *Molecular biology and evolution*. 11:725-736.
 * Greenman C, *et al*. (2006) Statistical analysis of pathogenicity of somatic mutations in cancer. *Genetics*. 173(4):2187-98.
 * Wong CC, Martincorena I, *et al*. (2014) Inactivating CUX1 mutations promote tumorigenesis. *Nature Genetics*. 46(1):33-8.
