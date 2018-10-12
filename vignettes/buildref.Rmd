@@ -60,7 +60,7 @@ path_genome_fasta = system.file("extdata", "chr3_segment.fa", package = "dndscv"
 buildref(cdsfile=path_cds_table, genomefile=path_genome_fasta, outfile = "example_output_refcds.rda")
 ```
 
-The code above will generate a RefCDS object and save it as a file using the *outfile* file name. Some users may be interested in loading the object and examining its structure (load("example_output_refcds.rda"); print(RefCDS[[1]])). The RefCDS object is an array of lists with an entry per gene (or, strictly speaking, per unique gene name). It contains information on the sequence of the gene and a table (192 rows by 4 columns) with the precomputed impact of all possible coding mutations in the gene and their trinucleotide context.
+The code above will generate a RefCDS object and save it as a file using the *outfile* file name. Some users may be interested in loading the object and examining its structure (```load("example_output_refcds.rda"); print(RefCDS[[1]])```). The RefCDS object is an array of lists with an entry per gene (or, strictly speaking, per unique gene name). It contains information on the sequence of the gene and a table (192 rows by 4 columns) with the precomputed impact of all possible coding mutations in the gene and their trinucleotide context.
 
 ###Running dNdScv with a new RefCDS object
 

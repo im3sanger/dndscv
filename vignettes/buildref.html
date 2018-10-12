@@ -302,7 +302,7 @@ print(reftable[1:21,])</code></pre>
 path_cds_table = system.file(&quot;extdata&quot;, &quot;BioMart_human_GRCh37_chr3_segment.txt&quot;, package = &quot;dndscv&quot;, mustWork = TRUE)
 path_genome_fasta = system.file(&quot;extdata&quot;, &quot;chr3_segment.fa&quot;, package = &quot;dndscv&quot;, mustWork = TRUE)
 buildref(cdsfile=path_cds_table, genomefile=path_genome_fasta, outfile = &quot;example_output_refcds.rda&quot;)</code></pre>
-<p>The code above will generate a RefCDS object and save it as a file using the <em>outfile</em> file name. Some users may be interested in loading the object and examining its structure (load(“example_output_refcds.rda”); print(RefCDS[[1]])). The RefCDS object is an array of lists with an entry per gene (or, strictly speaking, per unique gene name). It contains information on the sequence of the gene and a table (192 rows by 4 columns) with the precomputed impact of all possible coding mutations in the gene and their trinucleotide context.</p>
+<p>The code above will generate a RefCDS object and save it as a file using the <em>outfile</em> file name. Some users may be interested in loading the object and examining its structure (<code>load(&quot;example_output_refcds.rda&quot;); print(RefCDS[[1]])</code>). The RefCDS object is an array of lists with an entry per gene (or, strictly speaking, per unique gene name). It contains information on the sequence of the gene and a table (192 rows by 4 columns) with the precomputed impact of all possible coding mutations in the gene and their trinucleotide context.</p>
 </div>
 <div id="running-dndscv-with-a-new-refcds-object" class="section level3">
 <h3>Running dNdScv with a new RefCDS object</h3>
