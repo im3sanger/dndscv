@@ -20,7 +20,11 @@
 #' @references Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Cell.
 #' @keywords package
 #' @seealso \code{\link{dndscv}}
+#' @seealso \code{\link{buildref}}
 #' @import seqinr
 #' @import MASS
 #' @import GenomicRanges
+#' @import IRanges
+#' @import Rsamtools
+#' @import Biostrings
 NA

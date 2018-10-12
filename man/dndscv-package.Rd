@@ -22,6 +22,8 @@ Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Soma
 }
 \seealso{
 \code{\link{dndscv}}
+
+\code{\link{buildref}}
 }
 \author{
 Inigo Martincorena, Wellcome Trust Sanger Institute, \email{im3@sanger.ac.uk}
