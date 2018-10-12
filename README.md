@@ -20,8 +20,8 @@ The background mutation rate of each gene is estimated by combining local inform
 
 Note
 ----
-New functionalities will soon be added to this R package, including support for other 
-human genome assemblies and other species. 
+The latest version of this package (from 12 October 2018) includes support for other 
+human genome assemblies and other species.
 
 Installation
 --------
@@ -35,6 +35,10 @@ For a tutorial on dNdScv see the vignette included with the package. This includ
 examples for whole-exome/genome data and for targeted data.
 
 [Tutorial: getting started with dNdScv](http://htmlpreview.github.io/?http://github.com/im3sanger/dndscv/blob/master/vignettes/dNdScv.html)
+
+By default, dNdScv assumes that mutation data is mapped to the GRCh37/hg19 assembly of the
+human genome. Users interested in trying dNdScv on a different set of transcripts, a
+different assembly or a different species can follow this [tutorial](http://htmlpreview.github.io/?http://github.com/im3sanger/dndscv/blob/master/vignettes/buildref.html).
 
 Reference
 ----
