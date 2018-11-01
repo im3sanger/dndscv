@@ -49,7 +49,7 @@ The *buildref* function was originally designed to use a table of transcripts fr
 
 ![ ](Ensembl_BioMart_screenshot.png)
 
-Although the *buildref* function was originally designed to use BioMart output tables and fasta files of whole genome assemblies, you can use it in more flexible ways. For example, you could provide a fasta file with a CDS sequence per entry instead of full chromosomes, or you could annotate different protein domains under a different "gene name"" to perform inferences of selection at a domain level. Just note that, since dNdScv uses substitution models in a trinucleotide context, buildref will need to access the base before and after each CDS in the input fasta file.
+Although the *buildref* function was originally designed to use BioMart output tables and fasta files of whole genome assemblies, you can use it in more flexible ways. For example, you could provide a fasta file with a CDS sequence per entry instead of full chromosomes, or you could annotate different protein domains under a different "gene name" to perform inferences of selection at a domain level. Just note that, since dNdScv uses substitution models in a trinucleotide context, buildref will need to access the base before and after each CDS in the input fasta file.
 
 ###Using buildref
 
