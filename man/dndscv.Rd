@@ -7,7 +7,8 @@
 dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
   kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3,
   max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5,
-  maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1)
+  maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1,
+  outmats = F)
 }
 \arguments{
 \item{mutations}{Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.}
@@ -37,6 +38,8 @@ dndscv(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w",
 \item{outp}{Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv}
 
 \item{numcode}{NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.}
+
+\item{outmats}{Output the internal N and L matrices (default = F)}
 }
 \value{
 'dndscv' returns a list of objects:
