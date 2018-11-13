@@ -157,6 +157,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     mutations$mut_cod = mutations$mut
     compnt = setNames(rev(nt), nt)
     
+    if (!any(snv)) { stop("Zero coding substitutions found in this dataset. Unable to run dndscv.") }
+    
     mutations$strand = sapply(RefCDS,function(x) x$strand)[mutations$geneind]
     isminus = (mutations$strand==-1)
     mutations$ref_cod[isminus] = compnt[mutations$ref[isminus]]
@@ -184,6 +186,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
         geneind = mutations$geneind[j]
         pos = mutations$pos[j]
+        
         if (any(pos == RefCDS[[geneind]]$intervals_splice)) { # Essential splice-site substitution
         
             impact[j] = "Essential_Splice"; impind = 4
