@@ -123,7 +123,8 @@ sitednds = function(dndsout, min_recurr = 2, theta_option = "mle", syn_drivers =
     recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
     recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
     recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(L))
+    thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
     
-    return(list(recursites=recursites, theta=c(theta_ml, theta_ci95)))
+    return(list(recursites=recursites, theta=thetaout))
 
 }

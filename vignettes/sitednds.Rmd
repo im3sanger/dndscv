@@ -7,19 +7,19 @@ output:
     toc_float: true
 ---
 
-**Warning: this function is currently in testing. Users are advised to interpret the results with caution (Nov 2018).**
+**Warning: this function is in testing. Users are advised to interpret the results with caution.**
 
 The importance of recurrently mutated hotspots is widely appreciated in cancer. This tutorial shows how to apply the new **sitednds** function provided in the latest version of the *dNdScv* package to estimate dN/dS ratios at single-site level. Sitewise dN/dS estimation has a rich history in comparative genomics (e.g. Massingham and Goldman, 2005) but it has only been used in cancer studies occasionally (e.g. Martincorena *et al.*, 2015). Yet, studying the relative strength of selection at single sites can be valuable, as emphasised by a recent study (Cannataro *et al.*, 2018).
 
-The new *sitednds* function allows the user to compute maximum-likelihood dN/dS estimates for recurrently mutated sites, as well as p-values against neutrality. Sitewise dN/dS ratios reflect the ratio between the number of observed mutations and the number expected under neutrality, while controlling for trinucleotide rates and for variable mutation rates across genes.
+The new *sitednds* function allows the user to compute maximum-likelihood dN/dS estimates for recurrently mutated sites, as well as p-values against neutrality. Sitewise dN/dS ratios reflect the ratio between the number of observed mutations and the number expected under neutrality, while controlling for trinucleotide rates and for variable mutation rates across genes. In sparse datasets, point estimates for lowly-recurrent sites are likely to be underestimated, but p- and q-values provide a measure of their significance.
 
 An important aspect is that mutation rates can vary considerably across sites, even after correcting for these known mutational biases. *sitednds* models the observed mutation counts across synonymous sites as following a negative binomial distribution. This effectively controls for Poisson noise in the mutation counts per site and fits a Gamma distribution to the unexplained variation in mutation rate across sites. P-values for site recurrence are calculated using the fitted negative binomial distribution. These p-values should be more conservative and reliable than only considering Poisson variation or non-parametric bootstrapping, but they still rely on the assumption than the Gamma distribution appropriately captures the unexplained variation across sites.
 
-A major limitation that stopped me from releasing a similar function in earlier versions of the package is the fact that mapping artefacts and SNP contamination are common problems in cancer genomic datasets, and these tend to lead to recurrent false positive mutation calls. In noisy datasets, the results of *sitednds* can be dominated by artefacts. Users trying *sitednds* should be very critical of the results. In the context of cancer genomic studies, a considerable number of synonymous recurrently mutated sites among the significant hits in *sitednds* most certainly indicates a problem with the variant calling. This is exemplified in this tutorial analysing real data.
+A major limitation is the fact that mapping artefacts and SNP contamination are common problems in cancer genomic datasets, and these tend to lead to recurrent false positive mutation calls. In noisy datasets, the results of *sitednds* can be dominated by artefacts. Users trying *sitednds* should be very critical of the results. In the context of cancer genomic studies, a considerable number of synonymous recurrently mutated sites among the significant hits in *sitednds* most certainly indicates a problem with the variant calling. This is exemplified in this tutorial analysing two real datasets.
 
-###Sitewise dN/dS ratios on a cancer dataset
+###Sitewise dN/dS ratios in a cancer dataset
 
-As a small example, in this tutorial we will use public somatic mutation calls from bladder cancers from TCGA. To reduce the risk of false positives and increase the signal to noise ratio, this example will only consider mutations in Cancer Gene Census genes.
+As a small example, in this tutorial we will use public somatic mutation calls from bladder cancers from TCGA. To reduce the risk of false positives and increase the signal to noise ratio, this example will only consider mutations in Cancer Gene Census genes (v81).
 
 ```{r message=FALSE, warning=FALSE}
 library("dndscv")
@@ -50,7 +50,7 @@ hotspots = sitednds(dndsout) # Running sitewise dN/dS
 print(hotspots$theta) # Overdispersion (unexplained variation of the mutation rate across sites)
 ```
 
-You can see that the maximum-likelihood estimate of *theta* is very low. This reflects considerable variation in the mutation rate across sites, not explained by the trinucleotide change or by the estimated relative mutation rate of the gene. *sitednds* takes this into account when calculating p-values. If there is large uncertainty in the estimation of *theta*, users can choose to use the lower bound estimate of theta instead of the maximum-likelihood estimate, when calculating p-values (use the argument *theta_option="conservative"* in *sitednds*).
+You can see that the maximum-likelihood estimate of *theta* is very low. This reflects considerable variation in the mutation rate across sites, not explained by the trinucleotide context or by the estimated relative mutation rate of the gene. *sitednds* takes this into account when calculating p-values. If there is large uncertainty in the estimation of *theta*, users can choose to use the lower bound estimate of theta instead of the maximum-likelihood estimate, when calculating p-values (use the argument *theta_option="conservative"* in *sitednds*).
 
 The main output of *sitednds* is a table with all hotspots studied, including their position, the gene affected, the aminoacid change induced, the number of times that the mutation was observed, the expected number of mutations at this site by chance under neutrality (mu) and the dN/dS ratio. The table also contains p-values and q-values for the probability of observing that many mutations at the site by chance. Again, please treat these p-values with caution.
 
@@ -65,13 +65,13 @@ signifsites = hotspots$recursites[hotspots$recursites$qval<0.05, ]
 print(signifsites[,c("gene","aachange","impact","freq","dnds","qval")], digits=5)
 ```
 
-Careful examination of the significant hotspots reveals many well-known cancer-driver hotspots, including in *FGFR3* (e.g. S249, Y375, G372, K652), *TP53* (e.g. R248), *PIK3CA* (e.g. E542, H1047), *HRAS* (Q61), *HRAS* (G13), *KRAS* (G12), *ERBB2* (S310), *ERBB3* (V104), *SF3B1* (E902), etc. Note that the exact aminoacid position affected depends on the exact protein isoform used for annotation (see Ensembl protein IDs in *dndsout$annotmuts*).
+Careful examination of the significant hotspots reveals many well-known cancer-driver hotspots, including in *FGFR3* (e.g. S249, Y375, G372, K652), *TP53* (e.g. R248), *PIK3CA* (e.g. E542, H1047), *HRAS* (Q61, G13), *KRAS* (G12), *ERBB2* (S310), *ERBB3* (V104), *SF3B1* (E902), etc. Note that the exact aminoacid position affected depends on the exact protein isoform used for annotation (see Ensembl protein IDs in *dndsout$annotmuts*).
 
-However, the table of significant hotspots also contains a considerable number of likely false positives, including multiple synonymous sites in *MLLT3*. A proper analysis of these data will require careful reevaluation and improvement of the mutation calls, before repeating this analysis. Significant improvements to mutation calls against recurrent artefacts can be achieved by the use of unmatched normal panels and by more stringent removal of germline SNP contamination. 
+However, the table of significant hotspots also contains a considerable number of likely false positives, including multiple synonymous sites in *MLLT3*. A proper analysis of these data would require careful reevaluation and improvement of the mutation calls, before repeating this analysis. Significant improvements to somatic mutation calls against recurrent artefacts can be achieved by using an unmatched normal panel and by more stringent filtering of germline SNP contamination. 
 
-The TCGA mutation calls used in this example are an old version and it is likely that later versions are much less affected by artefacts. However, I decided to use this dataset to highlight the importance of critically examining the results and the impact of recurrent artefacts on driver discovery at gene and site level.
+The TCGA mutation calls used in this example are an old version and it is likely that more recent versions are much less affected by artefacts. However, I decided to use this dataset as an example to highlight the importance of critically examining the results and the impact of recurrent artefacts on driver discovery at gene and site level.
 
-###Sitewise dN/dS in normal oesophagus
+###Sitewise dN/dS ratios in normal oesophagus
 
 In a recent study, we sequenced 844 small biopsies of normal oesophageal epithelium from 9 transplant donors to study the extent of mutation and selection in a normal tissue (Martincorena *et al*., 2018). In this part of the tutorial, we will reanalyse this dataset using *dndscv* and *sitednds*. We first run *dndscv* using the settings from the analysis of normal skin data described in the main *dNdScv* tutorial.
 
