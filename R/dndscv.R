@@ -43,6 +43,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     message("[1] Loading the environment...")
 
     mutations[,c(1,2,4,5)] = lapply(mutations[,c(1,2,4,5)], as.character) # Factors to character
+    mutations[,3] = as.numeric(mutations[,3]) # Chromosome position as numeric
     
     # [Input] Reference database
     if (refdb == "hg19") {
