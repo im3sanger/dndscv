@@ -225,8 +225,8 @@ div.tocify {
 <p>The new <em>sitednds</em> function allows the user to compute maximum-likelihood dN/dS estimates for recurrently mutated sites, as well as p-values against neutrality. Sitewise dN/dS ratios reflect the ratio between the number of observed mutations and the number expected under neutrality, while controlling for trinucleotide rates and for variable mutation rates across genes. In sparse datasets, point estimates for lowly-recurrent sites are likely to be underestimated, but p- and q-values provide a measure of their significance.</p>
 <p>An important aspect is that mutation rates can vary considerably across sites, even after correcting for these known mutational biases. <em>sitednds</em> models the observed mutation counts across synonymous sites as following a negative binomial distribution. This effectively controls for Poisson noise in the mutation counts per site and fits a Gamma distribution to the unexplained variation in mutation rate across sites. P-values for site recurrence are calculated using the fitted negative binomial distribution. These p-values should be more conservative and reliable than only considering Poisson variation or non-parametric bootstrapping, but they still rely on the assumption than the Gamma distribution appropriately captures the unexplained variation across sites.</p>
 <p>A major limitation is the fact that mapping artefacts and SNP contamination are common problems in cancer genomic datasets, and these tend to lead to recurrent false positive mutation calls. In noisy datasets, the results of <em>sitednds</em> can be dominated by artefacts. Users trying <em>sitednds</em> should be very critical of the results. In the context of cancer genomic studies, a considerable number of synonymous recurrently mutated sites among the significant hits in <em>sitednds</em> most certainly indicates a problem with the variant calling. This is exemplified in this tutorial analysing two real datasets.</p>
-<div id="sitewise-dnds-ratios-from-a-cancer-dataset" class="section level3">
-<h3>Sitewise dN/dS ratios from a cancer dataset</h3>
+<div id="sitewise-dnds-ratios-in-a-cancer-dataset" class="section level3">
+<h3>Sitewise dN/dS ratios in a cancer dataset</h3>
 <p>As a small example, in this tutorial we will use public somatic mutation calls from bladder cancers from TCGA. To reduce the risk of false positives and increase the signal to noise ratio, this example will only consider mutations in Cancer Gene Census genes (v81).</p>
 <pre class="r"><code>library(&quot;dndscv&quot;)
 data(&quot;dataset_tcgablca&quot;, library=&quot;dndscv&quot;) # Loading the bladder cancer data
@@ -278,7 +278,8 @@ print(head(sel_cv, 10), digits = 3) # Printing the top 10 genes by q-value</code
 <p>To run the sitewise dN/dS model on this dataset, we only need to input the <em>dndsout</em> object into the <em>sitednds</em> function. By default, <em>sitednds</em> will calculate sitewise dN/dS ratios and p-values for sites mutated at least two times (use the argument <em>min_recurr</em> to control this). While p-values are only provided for recurrently mutated sites, false discovery adjustment corrects for all possible changes.</p>
 <pre class="r"><code>hotspots = sitednds(dndsout) # Running sitewise dN/dS
 print(hotspots$theta) # Overdispersion (unexplained variation of the mutation rate across sites)</code></pre>
-<pre><code>## [1] 0.07066467 0.05327883 0.09799202</code></pre>
+<pre><code>##        MLE    CI95low  CI95_high 
+## 0.07066467 0.05327883 0.09799202</code></pre>
 <p>You can see that the maximum-likelihood estimate of <em>theta</em> is very low. This reflects considerable variation in the mutation rate across sites, not explained by the trinucleotide context or by the estimated relative mutation rate of the gene. <em>sitednds</em> takes this into account when calculating p-values. If there is large uncertainty in the estimation of <em>theta</em>, users can choose to use the lower bound estimate of theta instead of the maximum-likelihood estimate, when calculating p-values (use the argument <em>theta_option=“conservative”</em> in <em>sitednds</em>).</p>
 <p>The main output of <em>sitednds</em> is a table with all hotspots studied, including their position, the gene affected, the aminoacid change induced, the number of times that the mutation was observed, the expected number of mutations at this site by chance under neutrality (mu) and the dN/dS ratio. The table also contains p-values and q-values for the probability of observing that many mutations at the site by chance. Again, please treat these p-values with caution.</p>
 <pre class="r"><code>print(head(hotspots$recursites,10)) # First 10 lines of the table of hotspots</code></pre>
@@ -425,9 +426,9 @@ head(signifsites[,c(&quot;gene&quot;,&quot;aachange&quot;,&quot;impact&quot;,&qu
 <div id="references" class="section level3">
 <h3>References</h3>
 <ul>
-<li>Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Cell</em>. 171(5):1029-1041.</li>
-<li>Massingham T, Goldman N. (2005) Detecting amino acid sites under positive selection and purifying selection. <em>Genetics</em>. 169(3):1753-62.</li>
-<li>Martincorena I, <em>et al</em>. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. <em>Science</em>. 348(6237):880-6.</li>
+<li>Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Cell</em>. 171(5):1029-1041. <a href="doi:10.1016/j.cell.2017.09.042" class="uri">doi:10.1016/j.cell.2017.09.042</a>.</li>
+<li>Massingham T, Goldman N. (2005) Detecting amino acid sites under positive selection and purifying selection. <em>Genetics</em>. 169(3):1753-62. <a href="doi:10.1534/genetics.104.032144" class="uri">doi:10.1534/genetics.104.032144</a>.</li>
+<li>Martincorena I, <em>et al</em>. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. <em>Science</em>. 348(6237):880-6. <a href="doi:10.1126/science.aaa6806" class="uri">doi:10.1126/science.aaa6806</a>.</li>
 <li>Cannataro VL, Gaffney SG, Townsend JP. (2018) Effect Sizes of Somatic Mutations in Cancer. <em>J Natl Cancer Inst</em>. <a href="doi:10.1093/jnci/djy168" class="uri">doi:10.1093/jnci/djy168</a>.</li>
 <li>Martincorena I, Fowler JC, <em>et al</em>. (2018) Somatic mutant clones colonize the human esophagus with age. <em>Science</em>. <a href="doi:10.1126/science.aau3879" class="uri">doi:10.1126/science.aau3879</a>.</li>
 </ul>

@@ -105,8 +105,8 @@ This analysis also identifies a known driver hotspot in a synonymous site of *TP
 
 
 ###References
-* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*. 171(5):1029-1041.
-* Massingham T, Goldman N. (2005) Detecting amino acid sites under positive selection and purifying selection. *Genetics*. 169(3):1753-62.
-* Martincorena I, *et al*. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. *Science*. 348(6237):880-6.
+* Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*. 171(5):1029-1041. doi:10.1016/j.cell.2017.09.042.
+* Massingham T, Goldman N. (2005) Detecting amino acid sites under positive selection and purifying selection. *Genetics*. 169(3):1753-62. doi:10.1534/genetics.104.032144.
+* Martincorena I, *et al*. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. *Science*. 348(6237):880-6. doi:10.1126/science.aaa6806.
 * Cannataro VL, Gaffney SG, Townsend JP. (2018) Effect Sizes of Somatic Mutations in Cancer. *J Natl Cancer Inst*. doi:10.1093/jnci/djy168.
 * Martincorena I, Fowler JC, *et al*. (2018) Somatic mutant clones colonize the human esophagus with age. *Science*. doi:10.1126/science.aau3879.
