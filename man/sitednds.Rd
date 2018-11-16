@@ -4,13 +4,15 @@
 \alias{sitednds}
 \title{sitednds}
 \usage{
-sitednds(dndsout, min_recurr = 2, theta_option = "mle",
+sitednds(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "mle",
   syn_drivers = "TP53:T125T")
 }
 \arguments{
 \item{dndsout}{Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.}
 
 \item{min_recurr}{Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]}
+
+\item{gene_list}{List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
 

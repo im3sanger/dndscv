@@ -6,6 +6,7 @@
 #' 
 #' @param dndsout Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.
 #' @param min_recurr Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]
+#' @param gene_list List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #'
@@ -15,7 +16,7 @@
 #' 
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, theta_option = "mle", syn_drivers = "TP53:T125T") {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T") {
     
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Site-wise negative binomial model accounting for trinucleotides and relative gene mutability...")
@@ -26,6 +27,19 @@ sitednds = function(dndsout, min_recurr = 2, theta_option = "mle", syn_drivers =
     if (length(N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
     if (nrow(dndsout$mle_submodel)!=195) { stop(sprintf("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv."))}
     
+    # Restricting the analysis to an input list of genes
+    if (!is.null(gene_list)) {
+        g = as.vector(dndsout$genemuts$gene_name)
+        nonex = gene_list[!(gene_list %in% g)]
+        if (length(nonex)>0) {
+            warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
+        }
+        dndsout$annotmuts = dndsout$annotmuts[which(dndsout$annotmuts$gene %in% gene_list), ]
+        dndsout$genemuts = dndsout$genemuts[which(g %in% gene_list), ]
+        N = N[,which(g %in% gene_list)]
+        L = L[,which(g %in% gene_list)]
+    }
+    
     # Counts of observed mutations
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
@@ -33,7 +47,7 @@ sitednds = function(dndsout, min_recurr = 2, theta_option = "mle", syn_drivers =
     annotsubs = annotsubs[!(paste(annotsubs$gene,annotsubs$aachange,sep=":") %in% syn_drivers),]
     freqs = sort(table(annotsubs$trisub), decreasing=T)
     
-    # Relative mutation rate per gene 
+    # Relative mutation rate per gene
     # Note that this assumes that the gene order in genemuts has not been altered with respect to the N and L matrices, as it is currently the case in dndscv
     relmr = dndsout$genemuts$exp_syn_cv/dndsout$genemuts$exp_syn
     names(relmr) = dndsout$genemuts$gene_name

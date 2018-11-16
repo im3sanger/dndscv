@@ -71,6 +71,9 @@ However, the table of significant hotspots also contains a considerable number o
 
 The TCGA mutation calls used in this example are an old version and it is likely that more recent versions are much less affected by artefacts. However, I decided to use this dataset as an example to highlight the importance of critically examining the results and the impact of recurrent artefacts on driver discovery at gene and site level.
 
+As a final note, users with whole-genome or whole-exome data can run *sitednds* on all genes. However, given the frequent presence of recurrent artefacts and the sparsity of cancer datasets, the signal-to-noise ratio can be considerably increased by running *sitednds* on a list of known cancer genes. To do so, I recommend running *dndscv* on all genes and then running *sitednds* on a list of genes of interest using the optional *gene_list* argument in *sitednds*. Running *dndscv* on all genes ensures that mutations from all genes are used to estimate the trinucleotide mutation rates, typically increasing their accuracy.
+
+
 ###Sitewise dN/dS ratios in normal oesophagus
 
 In a recent study, we sequenced 844 small biopsies of normal oesophageal epithelium from 9 transplant donors to study the extent of mutation and selection in a normal tissue (Martincorena *et al*., 2018). In this part of the tutorial, we will reanalyse this dataset using *dndscv* and *sitednds*. We first run *dndscv* using the settings from the analysis of normal skin data described in the main *dNdScv* tutorial.
