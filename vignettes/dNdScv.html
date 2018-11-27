@@ -222,7 +222,7 @@ div.tocify {
 
 <p>The <strong>dNdScv</strong> R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena <em>et al.</em>, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The <em>dNdScv</em> method was designed to detect cancer driver genes (<em>i.e.</em> genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies.</p>
 <p>Unlike traditional implementations of dN/dS, the <em>dNdScv</em> package uses trinucleotide context-dependent substitution models to avoid common mutation biases affecting dN/dS (Greenman <em>et al.</em>, 2006, Martincorena <em>et al.</em>, 2017). The package includes two different dN/dS models. <em>dNdSloc</em>, like traditional dN/dS implementations, uses the number of synonymous mutations in a gene to infer the local mutation rate, without exploiting additional information from other genes. <em>dNdScv</em> offers a much more powerful alternative, combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates) to estimate the background mutation rate. <em>dNdScv</em> should be preferred in most situations.</p>
-<p>This vignette shows how to perform driver discovery and selection analyses with <em>dNdScv</em> in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species. Adapting the method to run in other species requires the generation of a different reference database and, ideally, relevant covariates. Although designed for cancer genomic studies, <em>dNdScv</em> can be also used to quantify selection in other resequencing studies, such as SNP analyses, mutation accumulation studies in bacteria or for the discovery of mutations causing developmental disorders using data from human trios.</p>
+<p>This vignette shows how to perform driver discovery and selection analyses with <em>dNdScv</em> in cancer sequencing data. By default, dNdScv assumes human data from the GRCh37/hg19 assembly, but the latest version of the package provides a function (<em>buildref</em>) to generate the necessary reference file to run dNdScv on others species or assembly (see the relevant tutorial). Although designed for cancer genomic studies, <em>dNdScv</em> can be also used to quantify selection in other resequencing studies, such as SNP analyses, mutation accumulation studies in bacteria or for the discovery of mutations causing developmental disorders using data from human trios.</p>
 <p>To cite this package please use: Martincorena I, <em>et al</em>. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. <em>Cell</em>.</p>
 <div id="driver-discovery-positive-selection-in-cancer-exomesgenomes" class="section level2">
 <h2>Driver discovery (positive selection) in cancer exomes/genomes</h2>
@@ -254,46 +254,47 @@ dndsout = dndscv(mutations)</code></pre>
 <pre class="r"><code>sel_cv = dndsout$sel_cv
 print(head(sel_cv), digits = 3)</code></pre>
 <pre><code>##       gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv
-## 18056      TP53     1    43     5     4     5  113.68   221.7   221.7
-## 12976    PIK3CA     3    34     0     0     3   29.76     0.0     0.0
-## 9224       KRAS     1    21     0     0     0  125.99     0.0     0.0
-## 18923       VHL     3     9     1     0     4   24.76    38.2    38.2
+## 18057      TP53     1    43     5     4     5  113.66   221.8   221.8
+## 12977    PIK3CA     3    34     0     0     3   29.75     0.0     0.0
+## 9225       KRAS     1    21     0     0     0  125.98     0.0     0.0
+## 18924       VHL     3     9     1     0     4   24.75    38.3    38.3
 ## 1296        APC     2     8    10     0     6    2.82    31.2    31.2
 ## 1465     ARID1A     1     7    10     0     3    3.30    53.5    53.5
-##       wind_cv  pmis_cv ptrunc_cv pallsubs_cv  pind_cv  qmis_cv qtrunc_cv
-## 18056   138.8 0.00e+00  1.11e-16    0.00e+00 1.73e-09 0.00e+00  2.23e-12
-## 12976    30.7 0.00e+00  5.67e-01    0.00e+00 2.12e-04 0.00e+00  9.47e-01
-## 9224      0.0 0.00e+00  8.43e-01    0.00e+00 1.00e+00 0.00e+00  9.47e-01
-## 18923   204.5 7.43e-09  2.23e-02    7.95e-09 1.32e-08 2.99e-05  9.47e-01
-## 1296     23.1 4.96e-02  2.82e-10    2.12e-09 1.81e-06 7.71e-01  1.42e-06
-## 1465     14.4 3.64e-02  2.96e-12    2.39e-11 1.84e-03 7.71e-01  2.98e-08
+##       wind_cv  pmis_cv ptrunc_cv pallsubs_cv  pind_cv qmis_cv qtrunc_cv
+## 18057   128.6 0.00e+00  1.11e-16    0.00e+00 1.25e-09 0.00000  2.23e-12
+## 12977    32.8 0.00e+00  5.68e-01    0.00e+00 1.40e-04 0.00000  9.47e-01
+## 9225      0.0 0.00e+00  8.44e-01    0.00e+00 1.00e+00 0.00000  9.47e-01
+## 18924   200.1 7.46e-09  2.23e-02    7.97e-09 9.20e-09 0.00003  9.47e-01
+## 1296     26.1 4.96e-02  2.81e-10    2.12e-09 3.58e-07 0.77064  1.41e-06
+## 1465     16.2 3.64e-02  2.96e-12    2.38e-11 1.08e-03 0.77064  2.97e-08
 ##       qallsubs_cv pglobal_cv qglobal_cv
-## 18056     0.0e+00   0.00e+00   0.00e+00
-## 12976     0.0e+00   0.00e+00   0.00e+00
-## 9224      0.0e+00   0.00e+00   0.00e+00
-## 18923     2.0e-05   4.00e-15   2.01e-11
-## 1296      6.1e-06   1.31e-13   5.28e-10
-## 1465      1.2e-07   1.40e-12   4.68e-09</code></pre>
+## 18057    0.00e+00   0.00e+00   0.00e+00
+## 12977    0.00e+00   0.00e+00   0.00e+00
+## 9225     0.00e+00   0.00e+00   0.00e+00
+## 18924    2.00e-05   2.78e-15   1.39e-11
+## 1296     6.07e-06   2.72e-14   1.09e-10
+## 1465     1.20e-07   8.30e-13   2.78e-09</code></pre>
 <pre class="r"><code>signif_genes = sel_cv[sel_cv$qglobal_cv&lt;0.1, c(&quot;gene_name&quot;,&quot;qglobal_cv&quot;)]
 rownames(signif_genes) = NULL
 print(signif_genes)</code></pre>
-<pre><code>##    gene_name   qglobal_cv
-## 1       TP53 0.000000e+00
-## 2     PIK3CA 0.000000e+00
-## 3       KRAS 0.000000e+00
-## 4        VHL 2.007394e-11
-## 5        APC 5.281677e-10
-## 6     ARID1A 4.679831e-09
-## 7       PTEN 2.403743e-08
-## 8       IDH1 8.742613e-06
-## 9      PBRM1 3.169391e-05
-## 10       RB1 9.215911e-04
-## 11    PIK3R1 9.568278e-04
-## 12    CDKN2A 9.568278e-04
-## 13      BRAF 4.821497e-03
-## 14     KMT2C 2.652243e-02
-## 15     FBXW7 3.287783e-02
-## 16      EGFR 5.088073e-02</code></pre>
+<pre><code>##          gene_name   qglobal_cv
+## 1             TP53 0.000000e+00
+## 2           PIK3CA 0.000000e+00
+## 3             KRAS 0.000000e+00
+## 4              VHL 1.394093e-11
+## 5              APC 1.092969e-10
+## 6           ARID1A 2.779264e-09
+## 7             PTEN 3.149790e-08
+## 8             IDH1 8.764218e-06
+## 9            PBRM1 2.509780e-05
+## 10 CDKN2A.p16INK4a 8.980208e-05
+## 11   CDKN2A.p14arf 3.504854e-04
+## 12          PIK3R1 6.279672e-04
+## 13             RB1 7.275892e-04
+## 14            BRAF 4.478887e-03
+## 15           KMT2C 8.493709e-03
+## 16           FBXW7 3.083308e-02
+## 17            EGFR 5.772210e-02</code></pre>
 <p>Note in the table that the dN/dS ratios of significant cancer genes are typically extremely high, often &gt;10 or even &gt;100. This contains information about the fraction of mutations observed in a gene that are genuine drivers under positive selection. For example, for a highly significant gene, a dN/dS of 10 indicates that there are 10 times more non-synonymous mutations in the gene than neutrally expected, suggesting that at least around 90% of these mutations are genuine drivers (Greenman <em>et al</em>, 2006; Martincorena <em>et al</em>, 2017).</p>
 </div>
 <div id="dndscv-outputs-global-dnds-estimates" class="section level5">
@@ -301,11 +302,11 @@ print(signif_genes)</code></pre>
 <p>Another output that can be of interest is a table with the global MLEs for the dN/dS ratios across all genes. dN/dS ratios with associated confidence intervals are calculated for missense, nonsense and essential splice site substitutions separately, as well as for all non-synonymous substitutions (<em>wall</em>) and for all truncating substitutions together (<em>wtru</em>), which include nonsense and essential splice site mutations.</p>
 <pre class="r"><code>print(dndsout$globaldnds)</code></pre>
 <pre><code>##      name       mle     cilow   cihigh
-## wmis wmis 1.0222179 0.9855147 1.060288
-## wnon wnon 1.0616564 0.9813078 1.148584
-## wspl wspl 0.9707887 0.8656096 1.088748
-## wtru wtru 1.0326258 0.9651248 1.104848
-## wall wall 1.0241562 0.9879328 1.061708</code></pre>
+## wmis wmis 1.0224047 0.9856968 1.060480
+## wnon wnon 1.0645505 0.9840495 1.151637
+## wspl wspl 0.9711421 0.8659233 1.089146
+## wtru wtru 1.0347080 0.9671087 1.107032
+## wall wall 1.0245512 0.9883161 1.062115</code></pre>
 <p>Global dN/dS ratios in somatic evolution of cancer, and seemingly of healthy somatic tissues, appear to show a near-universal pattern of dN/dS~1, with exome-wide dN/dS ratios typically slightly higher than 1 (Martincorena <em>et al.</em>, 2017). Only occasionally, I have found datasets with global dN/dS&lt;1, but upon closer examination, this has typically been caused by contamination of the catalogue of somatic mutations with germline SNPs. An exception are melanoma tumours, which show a bias towards slight underestimation of dN/dS due to the signature of ultraviolet-induced mutations extending beyond the trinucleotide model (Martincorena <em>et al.</em>, 2017). In my personal experience, datasets of somatic mutations with global dN/dS&lt;&lt;1 have always reflected a problem of SNP contamination or an inadequate substitution model, and so the evaluation of global dN/dS values can help identify problems in certain datasets.</p>
 </div>
 <div id="other-useful-outputs" class="section level5">
@@ -313,12 +314,12 @@ print(signif_genes)</code></pre>
 <p>The dndscv function also outputs other results that can be of interest, such as an annotated table of coding mutations (<em>annotmuts</em>), MLEs of mutation rate parameters (<em>mle_submodel</em>), lists of samples and mutations excluded from the analysis and a table with the observed and expected number of mutations per gene (<em>genemuts</em>), among others.</p>
 <pre class="r"><code>head(dndsout$annotmuts)</code></pre>
 <pre><code>##   sampleID chr      pos ref mut geneind   gene ref_cod mut_cod strand
-## 1 Sample_1   1   871244   G   C   15262 SAMD11       G       C      1
-## 2 Sample_1   1  6648841   C   G   19346 ZBTB48       C       G      1
-## 3 Sample_1   1 17557072   G   A   12419  PADI1       G       A      1
-## 4 Sample_1   1 22838492   G   C   19338 ZBTB40       G       C      1
+## 1 Sample_1   1   871244   G   C   15263 SAMD11       G       C      1
+## 2 Sample_1   1  6648841   C   G   19347 ZBTB48       C       G      1
+## 3 Sample_1   1 17557072   G   A   12420  PADI1       G       A      1
+## 4 Sample_1   1 22838492   G   C   19339 ZBTB40       G       C      1
 ## 5 Sample_1   1 27097733   G   A    1465 ARID1A       G       A      1
-## 6 Sample_1   1 27333206   G   A    6236 FAM46B       C       T     -1
+## 6 Sample_1   1 27333206   G   A    6237 FAM46B       C       T     -1
 ##   ref3_cod mut3_cod aachange ntchange codonsub     impact             pid
 ## 1      AGA      ACA    R133T    G398C  AGA&gt;ACA   Missense ENSP00000342313
 ## 2      TCA      TGA    V569V   C1707G  GTC&gt;GTG Synonymous ENSP00000366902
@@ -328,7 +329,7 @@ print(signif_genes)</code></pre>
 ## 6      TCA      TTA    L169L    C507T  CTC&gt;CTT Synonymous ENSP00000289166</code></pre>
 <p>dNdScv relies on a negative binomial regression model across genes to refine the estimated background mutation rate for a gene. This assumes that the variation of the mutation rate across genes that remains unexplained by covariates or by the sequence composition of the gene can be modelled as a Gamma distribution. This model typically works well on clean cancer genomic datasets, but not all datasets may be suitable for this model. In particular, very low estimates of <span class="math inline">\(\theta\)</span> (the overdispersion parameter), particularly <span class="math inline">\(\theta&lt;1\)</span>, may reflect problems with the suitability of the dNdScv model for the dataset.</p>
 <pre class="r"><code>print(dndsout$nbreg$theta)</code></pre>
-<pre><code>## [1] 5.654063</code></pre>
+<pre><code>## [1] 5.653751</code></pre>
 </div>
 <div id="dndsloc-local-neutrality-test" class="section level5">
 <h5>dNdSloc: local neutrality test</h5>
@@ -359,24 +360,24 @@ dndsskin = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf,
 <pre class="r"><code>sel_cv = dndsskin$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1,c(1:10,19)]), digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
-## 47    NOTCH1    20   224    51    32    61    6.00   25.89   25.89  16.853
-## 48    NOTCH2     8   106    21     9    25    5.46   16.14   16.14   7.142
-## 26      FAT1    20    68    26     8    18    1.53   10.06   10.06   2.770
-## 72      TP53     9    43    11     7     7    3.28   13.29   13.29  12.546
-## 49    NOTCH3    15    35     8     2    11    1.13    3.79    3.79   3.345
-## 62     RBM10     6    14     8     2     1    1.28    7.23    7.23   0.759
+## 48    NOTCH1    20   224    51    32    61    6.00   25.86   25.86  16.366
+## 49    NOTCH2     8   106    21     9    25    5.46   16.09   16.09   6.935
+## 27      FAT1    20    68    26     8    18    1.53   10.05   10.05   2.690
+## 73      TP53     9    43    11     7     7    3.29   13.31   13.31  12.184
+## 50    NOTCH3    15    35     8     2    11    1.13    3.78    3.78   3.249
+## 63     RBM10     6    14     8     2     1    1.28    7.22    7.22   0.737
 ##    qglobal_cv
-## 47   0.00e+00
 ## 48   0.00e+00
-## 26   2.74e-15
-## 72   5.46e-12
-## 49   9.64e-03
-## 62   1.62e-02</code></pre>
+## 49   0.00e+00
+## 27   2.78e-15
+## 73   5.85e-12
+## 50   1.09e-02
+## 63   1.67e-02</code></pre>
 <pre class="r"><code>print(dndsskin$globaldnds, digits = 3)</code></pre>
 <pre><code>##      name  mle cilow cihigh
 ## wmis wmis 1.29  1.18   1.42
-## wnon wnon 2.00  1.69   2.36
-## wspl wspl 2.69  2.13   3.39
+## wnon wnon 1.99  1.69   2.36
+## wspl wspl 2.68  2.12   3.39
 ## wtru wtru 2.18  1.88   2.52
 ## wall wall 1.37  1.25   1.50</code></pre>
 </div>
@@ -429,33 +430,33 @@ dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = I
 ## = Inf, : Same mutations observed in different sampleIDs. Please verify that
 ## these are independent events and remove duplicates otherwise.</code></pre>
 <pre class="r"><code>print(dndsskin_2r$mle_submodel)</code></pre>
-<pre><code>##   name         mle     cilow      cihigh
-## 1    t 0.001138919 0.0010322 0.001256673
-## 2 tstv 4.034639842 3.7343229 4.359108541
-## 3 wmis 1.249162831 1.1421732 1.366174372
-## 4 wnon 2.847342918 2.4381291 3.325238944
-## 5 wspl 2.182462996 1.7662472 2.696759969</code></pre>
+<pre><code>##   name         mle       cilow      cihigh
+## 1    t 0.001140467 0.001033675 0.001258292
+## 2 tstv 4.029698090 3.729839629 4.353663512
+## 3 wmis 1.247146618 1.140387236 1.363900469
+## 4 wnon 2.844356607 2.435643899 3.321653265
+## 5 wspl 2.177987683 1.762662834 2.691172842</code></pre>
 <pre class="r"><code>sel_cv = dndsskin_2r$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1, c(1:10,19)]), digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
-## 47    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  16.853
-## 48    NOTCH2     8   106    21     9    25    5.54   20.15   20.15   7.142
-## 26      FAT1    20    68    26     8    18    1.44   13.43   13.43   2.770
-## 72      TP53     9    43    11     7     7    3.25   13.69   13.69  12.546
-## 49    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.345
-## 62     RBM10     6    14     8     2     1    1.15    7.14    7.14   0.759
+## 48    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  16.366
+## 49    NOTCH2     8   106    21     9    25    5.54   20.12   20.12   6.935
+## 27      FAT1    20    68    26     8    18    1.44   13.42   13.42   2.690
+## 73      TP53     9    43    11     7     7    3.26   13.72   13.72  12.184
+## 50    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.249
+## 63     RBM10     6    14     8     2     1    1.15    7.13    7.13   0.737
 ##    qglobal_cv
-## 47   0.00e+00
 ## 48   0.00e+00
-## 26   0.00e+00
-## 72   3.75e-12
-## 49   4.27e-03
-## 62   1.22e-02</code></pre>
+## 49   0.00e+00
+## 27   0.00e+00
+## 73   3.96e-12
+## 50   4.76e-03
+## 63   1.26e-02</code></pre>
 <p>In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena <em>et al</em>., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller. AIC model selection can be easily used:</p>
 <pre class="r"><code>AIC(dndsskin$poissmodel)</code></pre>
-<pre><code>## [1] 1960.518</code></pre>
+<pre><code>## [1] 1962.259</code></pre>
 <pre class="r"><code>AIC(dndsskin_2r$poissmodel)</code></pre>
-<pre><code>## [1] 4433.593</code></pre>
+<pre><code>## [1] 4431.958</code></pre>
 <div id="references" class="section level3">
 <h3>References</h3>
 <ul>

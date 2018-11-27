@@ -48,6 +48,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     # [Input] Reference database
     if (refdb == "hg19") {
         data("refcds_hg19", package="dndscv")
+        if (any(gene_list=="CDKN2A")) { # Replace CDKN2A in the input gene list with two isoforms
+            gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
+        }
     } else {
         load(refdb)
     }

@@ -44,7 +44,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
     annotsubs = annotsubs[which(annotsubs$ref!=annotsubs$mut),]
-    annotsubs = annotsubs[!(paste(annotsubs$gene,annotsubs$aachange,sep=":") %in% syn_drivers),]
     freqs = sort(table(annotsubs$trisub), decreasing=T)
     
     # Relative mutation rate per gene
@@ -75,6 +74,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     mutsites$geneindex = geneindex[mutsites$gene]
     
     synsites = mutsites[which(mutsites$impact=="Synonymous"),]
+    synsites = synsites[!(paste(synsites$gene,synsites$aachange,sep=":") %in% syn_drivers),]
     Lcum = array(cumsum(L), dim=dim(L)) # Cumulative L indicating the position to place a given mutation in the nvec following rvec
     synsites$vecindex = apply(as.matrix(synsites[,c("trindex","geneindex")]), 1, function(x) Lcum[x[1], x[2]]) # Index for the mutation
     synsites = synsites[order(synsites$vecindex), ] # Sorting by index in the nvec
@@ -137,6 +137,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
     recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
     recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(L))
+    rownames(recursites) = NULL
     thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
     
     return(list(recursites=recursites, theta=thetaout))
