@@ -44,6 +44,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
     mutations[,c(1,2,4,5)] = lapply(mutations[,c(1,2,4,5)], as.character) # Factors to character
     mutations[,3] = as.numeric(mutations[,3]) # Chromosome position as numeric
+    mutations = mutations[mutations[,4]!=mutations[,5],] # Removing mutations with identical reference and mutant base
+    colnames(mutations) = c("sampleID","chr","pos","ref","mut")
     
     # [Input] Reference database
     if (refdb == "hg19") {
@@ -103,11 +105,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     ## 2. Mutation annotation
     message("[2] Annotating the mutations...")
     
-    colnames(mutations) = c("sampleID","chr","pos","ref","mut")
     nt = c("A","C","G","T")
     trinucs = paste(rep(nt,each=16,times=1),rep(nt,each=4,times=4),rep(nt,each=1,times=16), sep="")
     trinucinds = setNames(1:64, trinucs)
-    
     trinucsubs = NULL
     for (j in 1:length(trinucs)) {
         trinucsubs = c(trinucsubs, paste(trinucs[j], paste(substr(trinucs[j],1,1), setdiff(nt,substr(trinucs[j],2,2)), substr(trinucs[j],3,3), sep=""), sep=">"))
@@ -127,12 +127,20 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         warning("Same mutations observed in different sampleIDs. Please verify that these are independent events and remove duplicates otherwise.")
     }
     
+    # Start and end position of each mutation
+    mutations$end = mutations$start = mutations$pos
+    l = nchar(mutations$ref)-1 # Deletions of multiple bases
+    mutations$end = mutations$end + l
+    ind = substr(mutations$ref,1,1)==substr(mutations$mut,1,1) & nchar(mutations$ref)>nchar(mutations$mut) # Position correction for deletions annotated in the previous base (e.g. CA>C)
+    mutations$start = mutations$start + ind
+    
     # Mapping mutations to genes
-    gr_muts = GenomicRanges::GRanges(mutations$chr, IRanges::IRanges(mutations$pos,mutations$pos))
+    gr_muts = GenomicRanges::GRanges(mutations$chr, IRanges::IRanges(mutations$start,mutations$end))
     ol = as.matrix(GenomicRanges::findOverlaps(gr_muts, gr_genes, type="any", select="all"))
     mutations = mutations[ol[,1],] # Duplicating subs if they hit more than one gene
     mutations$geneind = gr_genes_ind[ol[,2]]
     mutations$gene = sapply(RefCDS,function(x) x$gene_name)[mutations$geneind]
+    mutations = unique(mutations)
     
     # Optional: Excluding samples exceeding the limit of mutations/sample [see Default parameters]
     nsampl = sort(table(mutations$sampleID))
@@ -154,16 +162,14 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     # Additional annotation of substitutions
     
+    mutations$strand = sapply(RefCDS,function(x) x$strand)[mutations$geneind]
     snv = (mutations$ref %in% nt & mutations$mut %in% nt)
+    if (!any(snv)) { stop("Zero coding substitutions found in this dataset. Unable to run dndscv.") }
     indels = mutations[!snv,]
     mutations = mutations[snv,]
     mutations$ref_cod = mutations$ref
     mutations$mut_cod = mutations$mut
     compnt = setNames(rev(nt), nt)
-    
-    if (!any(snv)) { stop("Zero coding substitutions found in this dataset. Unable to run dndscv.") }
-    
-    mutations$strand = sapply(RefCDS,function(x) x$strand)[mutations$geneind]
     isminus = (mutations$strand==-1)
     mutations$ref_cod[isminus] = compnt[mutations$ref[isminus]]
     mutations$mut_cod[isminus] = compnt[mutations$mut[isminus]]
@@ -257,7 +263,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
     
     if (any(nrow(indels))) { # If there are indels we concatenate the tables of subs and indels
-        indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", strand=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", codonsub=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
+        indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", codonsub=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
         annot = rbind(mutations, indels)
     } else {
         annot = mutations
