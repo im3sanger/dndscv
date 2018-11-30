@@ -42,10 +42,18 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     ## 1. Environment
     message("[1] Loading the environment...")
 
+    mutations = mutations[,1:5] # Restricting input matrix to first 5 columns
     mutations[,c(1,2,4,5)] = lapply(mutations[,c(1,2,4,5)], as.character) # Factors to character
     mutations[,3] = as.numeric(mutations[,3]) # Chromosome position as numeric
     mutations = mutations[mutations[,4]!=mutations[,5],] # Removing mutations with identical reference and mutant base
     colnames(mutations) = c("sampleID","chr","pos","ref","mut")
+    
+    # Removing NA entries from the input mutation table
+    indna = which(is.na(mutations),arr.ind=T)
+    if (nrow(indna)>0) {
+        mutations = mutations[-unique(indna[,1]),] # Removing entries with an NA in any row
+        warning(sprintf("%0.0f rows in the input table contained NA entries and have been removed. Please investigate.",length(unique(indna[,1]))))
+    }
     
     # [Input] Reference database
     if (refdb == "hg19") {
