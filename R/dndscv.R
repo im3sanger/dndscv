@@ -413,14 +413,19 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             }
             nbrdf = cbind(genemuts[,c("n_syn","exp_syn")], covs)
             
-            # Negative binomial regression
-            model = suppressWarnings(MASS::glm.nb(n_syn ~ offset(log(exp_syn)) + . , data = nbrdf))
-            if (!is.null(model$th.warn) | nrow(genemuts)<500) { # If there are warnings or if <500 genes, we run the regression without covariates
+            # Negative binomial regression for substitutions
+            if (nrow(genemuts)<500) { # If there are <500 genes, we run the regression without covariates
                 model = MASS::glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf)
-                message(sprintf("    Regression model for substitutions: no covariates were used (theta = %0.3g).", model$theta))
             } else {
-                message(sprintf("    Regression model for substitutions: all covariates were used (theta = %0.3g).", model$theta))
+                model = tryCatch({
+                    MASS::glm.nb(n_syn ~ offset(log(exp_syn)) + . , data = nbrdf) # We try running the model with covariates
+                }, warning = function(w){
+                    MASS::glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf) # If there are warnings or errors we run the model without covariates
+                }, error = function(e){
+                    MASS::glm.nb(n_syn ~ offset(log(exp_syn)) - 1 , data = nbrdf) # If there are warnings or errors we run the model without covariates
+                })
             }
+            message(sprintf("    Regression model for substitutions (theta = %0.3g).", model$theta))
         }
         if (all(model$y==genemuts$n_syn)) {
             genemuts$exp_syn_cv = model$fitted.values
@@ -522,22 +527,25 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             
             if (is.null(cv)) {
                 nbrdf = geneindels[,c("n_indused","exp_unif")][!geneindels[,6],] # We exclude known drivers from the fit
-                model = suppressWarnings(MASS::glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
                 model = MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
-                message(sprintf("    Regression model for indels: no covariates were used (theta = %0.3g)", model$theta))
                 nbrdf_all = geneindels[,c("n_indused","exp_unif")]
             } else {
                 nbrdf = cbind(geneindels[,c("n_indused","exp_unif")], covs)[!geneindels[,6],] # We exclude known drivers from the fit
-                model = suppressWarnings(MASS::glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf))
-                if (!is.null(model$th.warn) | nrow(genemuts)<500) { # If there are warnings or if <500 genes, we run the regression without covariates
+                if (nrow(genemuts)<500) { # If there are <500 genes, we run the regression without covariates
                     model = MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
-                    message(sprintf("    Regression model for indels: no covariates were used (theta = %0.3g)", model$theta))
                 } else {
-                    message(sprintf("    Regression model for indels: all covariates were used (theta = %0.3g)", model$theta))
+                    model = tryCatch({
+                        MASS::glm.nb(n_indused ~ offset(log(exp_unif)) + . , data = nbrdf) # We try running the model with covariates
+                    }, warning = function(w){
+                        MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf) # If there are warnings or errors we run the model without covariates
+                    }, error = function(e){
+                        MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf) # If there are warnings or errors we run the model without covariates
+                    })
                 }
                 nbrdf_all = cbind(geneindels[,c("n_indused","exp_unif")], covs)
             }
-             
+            message(sprintf("    Regression model for indels (theta = %0.3g)", model$theta))
+            
             theta_indels = model$theta
             nbregind = model
             geneindels$exp_indcv = exp(predict(model,nbrdf_all))

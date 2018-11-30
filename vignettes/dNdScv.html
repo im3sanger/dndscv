@@ -261,19 +261,19 @@ print(head(sel_cv), digits = 3)</code></pre>
 ## 1296        APC     2     8    10     0     6    2.82    31.2    31.2
 ## 1465     ARID1A     1     7    10     0     3    3.30    53.5    53.5
 ##       wind_cv  pmis_cv ptrunc_cv pallsubs_cv  pind_cv qmis_cv qtrunc_cv
-## 18057   128.6 0.00e+00  1.11e-16    0.00e+00 1.25e-09 0.00000  2.23e-12
-## 12977    32.8 0.00e+00  5.68e-01    0.00e+00 1.40e-04 0.00000  9.47e-01
+## 18057   138.8 0.00e+00  1.11e-16    0.00e+00 1.73e-09 0.00000  2.23e-12
+## 12977    30.7 0.00e+00  5.68e-01    0.00e+00 2.12e-04 0.00000  9.47e-01
 ## 9225      0.0 0.00e+00  8.44e-01    0.00e+00 1.00e+00 0.00000  9.47e-01
-## 18924   200.1 7.46e-09  2.23e-02    7.97e-09 9.20e-09 0.00003  9.47e-01
-## 1296     26.1 4.96e-02  2.81e-10    2.12e-09 3.58e-07 0.77064  1.41e-06
-## 1465     16.2 3.64e-02  2.96e-12    2.38e-11 1.08e-03 0.77064  2.97e-08
+## 18924   204.5 7.46e-09  2.23e-02    7.97e-09 1.32e-08 0.00003  9.47e-01
+## 1296     23.1 4.96e-02  2.81e-10    2.12e-09 1.81e-06 0.77064  1.41e-06
+## 1465     14.4 3.64e-02  2.96e-12    2.38e-11 1.84e-03 0.77064  2.97e-08
 ##       qallsubs_cv pglobal_cv qglobal_cv
 ## 18057    0.00e+00   0.00e+00   0.00e+00
 ## 12977    0.00e+00   0.00e+00   0.00e+00
 ## 9225     0.00e+00   0.00e+00   0.00e+00
-## 18924    2.00e-05   2.78e-15   1.39e-11
-## 1296     6.07e-06   2.72e-14   1.09e-10
-## 1465     1.20e-07   8.30e-13   2.78e-09</code></pre>
+## 18924    2.00e-05   4.00e-15   2.01e-11
+## 1296     6.07e-06   1.31e-13   5.26e-10
+## 1465     1.20e-07   1.39e-12   4.67e-09</code></pre>
 <pre class="r"><code>signif_genes = sel_cv[sel_cv$qglobal_cv&lt;0.1, c(&quot;gene_name&quot;,&quot;qglobal_cv&quot;)]
 rownames(signif_genes) = NULL
 print(signif_genes)</code></pre>
@@ -281,20 +281,20 @@ print(signif_genes)</code></pre>
 ## 1             TP53 0.000000e+00
 ## 2           PIK3CA 0.000000e+00
 ## 3             KRAS 0.000000e+00
-## 4              VHL 1.394093e-11
-## 5              APC 1.092969e-10
-## 6           ARID1A 2.779264e-09
-## 7             PTEN 3.149790e-08
+## 4              VHL 2.007494e-11
+## 5              APC 5.259635e-10
+## 6           ARID1A 4.668167e-09
+## 7             PTEN 2.400389e-08
 ## 8             IDH1 8.764218e-06
-## 9            PBRM1 2.509780e-05
-## 10 CDKN2A.p16INK4a 8.980208e-05
-## 11   CDKN2A.p14arf 3.504854e-04
-## 12          PIK3R1 6.279672e-04
-## 13             RB1 7.275892e-04
+## 9            PBRM1 3.165896e-05
+## 10 CDKN2A.p16INK4a 6.253703e-05
+## 11   CDKN2A.p14arf 2.439196e-04
+## 12             RB1 7.672107e-04
+## 13          PIK3R1 8.756238e-04
 ## 14            BRAF 4.478887e-03
-## 15           KMT2C 8.493709e-03
+## 15           KMT2C 2.472208e-02
 ## 16           FBXW7 3.083308e-02
-## 17            EGFR 5.772210e-02</code></pre>
+## 17            EGFR 4.784963e-02</code></pre>
 <p>Note in the table that the dN/dS ratios of significant cancer genes are typically extremely high, often &gt;10 or even &gt;100. This contains information about the fraction of mutations observed in a gene that are genuine drivers under positive selection. For example, for a highly significant gene, a dN/dS of 10 indicates that there are 10 times more non-synonymous mutations in the gene than neutrally expected, suggesting that at least around 90% of these mutations are genuine drivers (Greenman <em>et al</em>, 2006; Martincorena <em>et al</em>, 2017).</p>
 </div>
 <div id="dndscv-outputs-global-dnds-estimates" class="section level5">
@@ -360,19 +360,19 @@ dndsskin = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf,
 <pre class="r"><code>sel_cv = dndsskin$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1,c(1:10,19)]), digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
-## 48    NOTCH1    20   224    51    32    61    6.00   25.86   25.86  16.366
-## 49    NOTCH2     8   106    21     9    25    5.46   16.09   16.09   6.935
-## 27      FAT1    20    68    26     8    18    1.53   10.05   10.05   2.690
-## 73      TP53     9    43    11     7     7    3.29   13.31   13.31  12.184
-## 50    NOTCH3    15    35     8     2    11    1.13    3.78    3.78   3.249
-## 63     RBM10     6    14     8     2     1    1.28    7.22    7.22   0.737
+## 48    NOTCH1    20   224    51    32    61    6.00   25.86   25.86  16.853
+## 49    NOTCH2     8   106    21     9    25    5.46   16.09   16.09   7.142
+## 27      FAT1    20    68    26     8    18    1.53   10.05   10.05   2.770
+## 73      TP53     9    43    11     7     7    3.29   13.31   13.31  12.546
+## 50    NOTCH3    15    35     8     2    11    1.13    3.78    3.78   3.345
+## 63     RBM10     6    14     8     2     1    1.28    7.22    7.22   0.759
 ##    qglobal_cv
 ## 48   0.00e+00
 ## 49   0.00e+00
 ## 27   2.78e-15
-## 73   5.85e-12
-## 50   1.09e-02
-## 63   1.67e-02</code></pre>
+## 73   5.27e-12
+## 50   9.91e-03
+## 63   1.65e-02</code></pre>
 <pre class="r"><code>print(dndsskin$globaldnds, digits = 3)</code></pre>
 <pre><code>##      name  mle cilow cihigh
 ## wmis wmis 1.29  1.18   1.42
@@ -439,19 +439,19 @@ dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = I
 <pre class="r"><code>sel_cv = dndsskin_2r$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1, c(1:10,19)]), digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
-## 48    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  16.366
-## 49    NOTCH2     8   106    21     9    25    5.54   20.12   20.12   6.935
-## 27      FAT1    20    68    26     8    18    1.44   13.42   13.42   2.690
-## 73      TP53     9    43    11     7     7    3.26   13.72   13.72  12.184
-## 50    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.249
-## 63     RBM10     6    14     8     2     1    1.15    7.13    7.13   0.737
+## 48    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  16.853
+## 49    NOTCH2     8   106    21     9    25    5.54   20.12   20.12   7.142
+## 27      FAT1    20    68    26     8    18    1.44   13.42   13.42   2.770
+## 73      TP53     9    43    11     7     7    3.26   13.72   13.72  12.546
+## 50    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.345
+## 63     RBM10     6    14     8     2     1    1.15    7.13    7.13   0.759
 ##    qglobal_cv
 ## 48   0.00e+00
 ## 49   0.00e+00
 ## 27   0.00e+00
-## 73   3.96e-12
-## 50   4.76e-03
-## 63   1.26e-02</code></pre>
+## 73   3.56e-12
+## 50   4.33e-03
+## 63   1.24e-02</code></pre>
 <p>In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena <em>et al</em>., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller. AIC model selection can be easily used:</p>
 <pre class="r"><code>AIC(dndsskin$poissmodel)</code></pre>
 <pre><code>## [1] 1962.259</code></pre>
