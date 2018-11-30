@@ -522,7 +522,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             geneindels$excl = (geneindels[,1] %in% known_cancergenes)
             min_bkg_genes = 50
             if (sum(!geneindels$excl)<min_bkg_genes | sum(geneindels[!geneindels$excl,"n_indused"]) == 0) { # If the exclusion list is too restrictive (e.g. targeted sequencing of cancer genes), then identify a shorter list of selected genes using the substitutions.
-                newkc = as.vector(sel_cv$gene_name[sel_cv$qallsubs_cv<0.05])
+                newkc = as.vector(sel_cv$gene_name[sel_cv$qallsubs_cv<0.01])
                 geneindels$excl = (geneindels[,1] %in% newkc)
                 if (sum(!geneindels$excl)<min_bkg_genes | sum(geneindels[!geneindels$excl,"n_indused"]) == 0) { # If the new exclusion list is still too restrictive, then do not apply a restriction.
                     geneindels$excl = F
