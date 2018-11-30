@@ -182,9 +182,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     chr2cds = function(pos,cds_int,strand) {
         if (strand==1) {
-            return(which(pos==unlist(apply(cds_int, 1, function(x) x[1]:x[2]))))
+            return(which(unlist(apply(cds_int, 1, function(x) x[1]:x[2])) %in% pos))
         } else if (strand==-1) {
-            return(which(pos==rev(unlist(apply(cds_int, 1, function(x) x[1]:x[2])))))
+            return(which(rev(unlist(apply(cds_int, 1, function(x) x[1]:x[2]))) %in% pos))
         }
     }
     
@@ -204,8 +204,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             cdsnt = RefCDS[[geneind]]$seq_splice[pos_ind]
             ref3_cod[j] = sprintf("%s%s%s", RefCDS[[geneind]]$seq_splice1up[pos_ind], RefCDS[[geneind]]$seq_splice[pos_ind], RefCDS[[geneind]]$seq_splice1down[pos_ind])
             mut3_cod[j] = sprintf("%s%s%s", RefCDS[[geneind]]$seq_splice1up[pos_ind], mutations$mut_cod[j], RefCDS[[geneind]]$seq_splice1down[pos_ind])
-            aachange[j] = ntchange[j] = "-"
-        
+            aachange[j] = ntchange[j] = codonsub[j] = "."
+
         } else { # Coding substitution
         
             pos_ind = chr2cds(pos, RefCDS[[geneind]]$intervals_cds, RefCDS[[geneind]]$strand)
@@ -264,6 +264,30 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     if (any(nrow(indels))) { # If there are indels we concatenate the tables of subs and indels
         indels = cbind(indels, data.frame(ref_cod=".", mut_cod=".", ref3_cod=".", mut3_cod=".", aachange=".", ntchange=".", codonsub=".", impact="no-SNV", pid=sapply(RefCDS,function(x) x$protein_id)[indels$geneind]))
+        
+        # Annotation of indels
+        ins = nchar(gsub("-","",indels$ref))<nchar(gsub("-","",indels$mut))
+        del = nchar(gsub("-","",indels$ref))>nchar(gsub("-","",indels$mut))
+        multisub = nchar(gsub("-","",indels$ref))==nchar(gsub("-","",indels$mut)) # Including dinucleotides
+        l = nchar(gsub("-","",indels$ref))-nchar(gsub("-","",indels$mut))
+        indelstr = rep(NA,nrow(indels))
+        for (j in 1:nrow(indels)) {
+            geneind = indels$geneind[j]
+            pos = indels$start[j]:indels$end[j]
+            if (ins[j]) { pos = c(pos-1,pos) } # Adding the upstream base for insertions
+            pos_ind = chr2cds(pos, RefCDS[[geneind]]$intervals_cds, RefCDS[[geneind]]$strand)
+            if (length(pos_ind)>0) {
+                inframe = (length(pos_ind) %% 3) == 0
+                if (ins[j]) { # Insertion
+                    indelstr[j] = sprintf("%0.0f-%0.0f-ins%s",min(pos_ind),max(pos_ind),c("frshift","inframe")[inframe+1])
+                } else if (del[j]) { # Deletion
+                    indelstr[j] = sprintf("%0.0f-%0.0f-del%s",min(pos_ind),max(pos_ind),c("frshift","inframe")[inframe+1])
+                } else { # Dinucleotide and multinucleotide changes (MNVs)
+                    indelstr[j] = sprintf("%0.0f-%0.0f-mnv",min(pos_ind),max(pos_ind))
+                }
+            }
+        }
+        indels$ntchange = indelstr
         annot = rbind(mutations, indels)
     } else {
         annot = mutations
@@ -530,6 +554,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     if (!any(!is.na(wrong_ref))) {
         wrong_refbase = NULL # Output value if there were no wrong bases
     }
+    
+    annot = annot[,setdiff(colnames(annot),c("start","end","geneind"))]
     
     if (outmats) {
         dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, N = Nall, L = Lall)

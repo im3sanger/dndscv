@@ -313,20 +313,20 @@ print(signif_genes)</code></pre>
 <h5>Other useful outputs</h5>
 <p>The dndscv function also outputs other results that can be of interest, such as an annotated table of coding mutations (<em>annotmuts</em>), MLEs of mutation rate parameters (<em>mle_submodel</em>), lists of samples and mutations excluded from the analysis and a table with the observed and expected number of mutations per gene (<em>genemuts</em>), among others.</p>
 <pre class="r"><code>head(dndsout$annotmuts)</code></pre>
-<pre><code>##   sampleID chr      pos ref mut geneind   gene ref_cod mut_cod strand
-## 1 Sample_1   1   871244   G   C   15263 SAMD11       G       C      1
-## 2 Sample_1   1  6648841   C   G   19347 ZBTB48       C       G      1
-## 3 Sample_1   1 17557072   G   A   12420  PADI1       G       A      1
-## 4 Sample_1   1 22838492   G   C   19339 ZBTB40       G       C      1
-## 5 Sample_1   1 27097733   G   A    1465 ARID1A       G       A      1
-## 6 Sample_1   1 27333206   G   A    6237 FAM46B       C       T     -1
-##   ref3_cod mut3_cod aachange ntchange codonsub     impact             pid
-## 1      AGA      ACA    R133T    G398C  AGA&gt;ACA   Missense ENSP00000342313
-## 2      TCA      TGA    V569V   C1707G  GTC&gt;GTG Synonymous ENSP00000366902
-## 3      AGA      AAA    E353E   G1059A  GAG&gt;GAA Synonymous ENSP00000364620
-## 4      GGA      GCA    D776H   G2326C  GAT&gt;CAT   Missense ENSP00000364798
-## 5      TGA      TAA   E1108K   G3322A  GAA&gt;AAA   Missense ENSP00000320485
-## 6      TCA      TTA    L169L    C507T  CTC&gt;CTT Synonymous ENSP00000289166</code></pre>
+<pre><code>##   sampleID chr      pos ref mut   gene strand ref_cod mut_cod ref3_cod
+## 1 Sample_1   1   871244   G   C SAMD11      1       G       C      AGA
+## 2 Sample_1   1  6648841   C   G ZBTB48      1       C       G      TCA
+## 3 Sample_1   1 17557072   G   A  PADI1      1       G       A      AGA
+## 4 Sample_1   1 22838492   G   C ZBTB40      1       G       C      GGA
+## 5 Sample_1   1 27097733   G   A ARID1A      1       G       A      TGA
+## 6 Sample_1   1 27333206   G   A FAM46B     -1       C       T      TCA
+##   mut3_cod aachange ntchange codonsub     impact             pid
+## 1      ACA    R133T    G398C  AGA&gt;ACA   Missense ENSP00000342313
+## 2      TGA    V569V   C1707G  GTC&gt;GTG Synonymous ENSP00000366902
+## 3      AAA    E353E   G1059A  GAG&gt;GAA Synonymous ENSP00000364620
+## 4      GCA    D776H   G2326C  GAT&gt;CAT   Missense ENSP00000364798
+## 5      TAA   E1108K   G3322A  GAA&gt;AAA   Missense ENSP00000320485
+## 6      TTA    L169L    C507T  CTC&gt;CTT Synonymous ENSP00000289166</code></pre>
 <p>dNdScv relies on a negative binomial regression model across genes to refine the estimated background mutation rate for a gene. This assumes that the variation of the mutation rate across genes that remains unexplained by covariates or by the sequence composition of the gene can be modelled as a Gamma distribution. This model typically works well on clean cancer genomic datasets, but not all datasets may be suitable for this model. In particular, very low estimates of <span class="math inline">\(\theta\)</span> (the overdispersion parameter), particularly <span class="math inline">\(\theta&lt;1\)</span>, may reflect problems with the suitability of the dNdScv model for the dataset.</p>
 <pre class="r"><code>print(dndsout$nbreg$theta)</code></pre>
 <pre><code>## [1] 5.653751</code></pre>
@@ -389,24 +389,24 @@ print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1,c(1:10,19)]), digits = 3)</code></pre
 data(&quot;submod_192r_3w&quot;, package=&quot;dndscv&quot;)
 colnames(substmodel) = c(&quot;syn&quot;,&quot;mis&quot;,&quot;non&quot;,&quot;spl&quot;)
 head(substmodel)</code></pre>
-<pre><code>##      syn         mis              non              spl             
-## [1,] &quot;t*AAA&gt;ACA&quot; &quot;t*AAA&gt;ACA*wmis&quot; &quot;t*AAA&gt;ACA*wnon&quot; &quot;t*AAA&gt;ACA*wspl&quot;
-## [2,] &quot;t*AAA&gt;AGA&quot; &quot;t*AAA&gt;AGA*wmis&quot; &quot;t*AAA&gt;AGA*wnon&quot; &quot;t*AAA&gt;AGA*wspl&quot;
-## [3,] &quot;t*AAA&gt;ATA&quot; &quot;t*AAA&gt;ATA*wmis&quot; &quot;t*AAA&gt;ATA*wnon&quot; &quot;t*AAA&gt;ATA*wspl&quot;
-## [4,] &quot;t*AAC&gt;ACC&quot; &quot;t*AAC&gt;ACC*wmis&quot; &quot;t*AAC&gt;ACC*wnon&quot; &quot;t*AAC&gt;ACC*wspl&quot;
-## [5,] &quot;t*AAC&gt;AGC&quot; &quot;t*AAC&gt;AGC*wmis&quot; &quot;t*AAC&gt;AGC*wnon&quot; &quot;t*AAC&gt;AGC*wspl&quot;
-## [6,] &quot;t*AAC&gt;ATC&quot; &quot;t*AAC&gt;ATC*wmis&quot; &quot;t*AAC&gt;ATC*wnon&quot; &quot;t*AAC&gt;ATC*wspl&quot;</code></pre>
+<pre><code>##         syn         mis              non              spl             
+## AAA&gt;ACA &quot;t*AAA&gt;ACA&quot; &quot;t*AAA&gt;ACA*wmis&quot; &quot;t*AAA&gt;ACA*wnon&quot; &quot;t*AAA&gt;ACA*wspl&quot;
+## AAA&gt;AGA &quot;t*AAA&gt;AGA&quot; &quot;t*AAA&gt;AGA*wmis&quot; &quot;t*AAA&gt;AGA*wnon&quot; &quot;t*AAA&gt;AGA*wspl&quot;
+## AAA&gt;ATA &quot;t*AAA&gt;ATA&quot; &quot;t*AAA&gt;ATA*wmis&quot; &quot;t*AAA&gt;ATA*wnon&quot; &quot;t*AAA&gt;ATA*wspl&quot;
+## AAC&gt;ACC &quot;t*AAC&gt;ACC&quot; &quot;t*AAC&gt;ACC*wmis&quot; &quot;t*AAC&gt;ACC*wnon&quot; &quot;t*AAC&gt;ACC*wspl&quot;
+## AAC&gt;AGC &quot;t*AAC&gt;AGC&quot; &quot;t*AAC&gt;AGC*wmis&quot; &quot;t*AAC&gt;AGC*wnon&quot; &quot;t*AAC&gt;AGC*wspl&quot;
+## AAC&gt;ATC &quot;t*AAC&gt;ATC&quot; &quot;t*AAC&gt;ATC*wmis&quot; &quot;t*AAC&gt;ATC*wnon&quot; &quot;t*AAC&gt;ATC*wspl&quot;</code></pre>
 <pre class="r"><code># 12 rates (no context-dependence)
 data(&quot;submod_12r_3w&quot;, package=&quot;dndscv&quot;)
 colnames(substmodel) = c(&quot;syn&quot;,&quot;mis&quot;,&quot;non&quot;,&quot;spl&quot;)
 head(substmodel)</code></pre>
-<pre><code>##      syn     mis          non          spl         
-## [1,] &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
-## [2,] &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
-## [3,] &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;
-## [4,] &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
-## [5,] &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
-## [6,] &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;</code></pre>
+<pre><code>##         syn     mis          non          spl         
+## AAA&gt;ACA &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
+## AAA&gt;AGA &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
+## AAA&gt;ATA &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;
+## AAC&gt;ACC &quot;t*A&gt;C&quot; &quot;t*A&gt;C*wmis&quot; &quot;t*A&gt;C*wnon&quot; &quot;t*A&gt;C*wspl&quot;
+## AAC&gt;AGC &quot;t*A&gt;G&quot; &quot;t*A&gt;G*wmis&quot; &quot;t*A&gt;G*wnon&quot; &quot;t*A&gt;G*wspl&quot;
+## AAC&gt;ATC &quot;t*A&gt;T&quot; &quot;t*A&gt;T*wmis&quot; &quot;t*A&gt;T*wnon&quot; &quot;t*A&gt;T*wspl&quot;</code></pre>
 <pre class="r"><code># 2 rates (classic ts/tv model)
 data(&quot;submod_2r_3w&quot;, package=&quot;dndscv&quot;)
 colnames(substmodel) = c(&quot;syn&quot;,&quot;mis&quot;,&quot;non&quot;,&quot;spl&quot;)
