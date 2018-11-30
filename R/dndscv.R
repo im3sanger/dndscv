@@ -510,17 +510,28 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             geneindels$gene_name = sapply(RefCDS, function(x) x$gene_name)
             geneindels$n_ind = as.numeric(table(indels$gene)[geneindels[,1]]); geneindels[is.na(geneindels[,2]),2] = 0
             geneindels$n_induniq = as.numeric(table(unique(indels[,-1])$gene)[geneindels[,1]]); geneindels[is.na(geneindels[,3]),3] = 0
+            geneindels$cds_length = sapply(RefCDS, function(x) x$CDS_length)
             
             if (use_indel_sites) {
                 geneindels$n_indused = geneindels[,3]
             } else {
                 geneindels$n_indused = geneindels[,2]
             }
-            geneindels$cds_length = sapply(RefCDS, function(x) x$CDS_length)
+            
+            # Excluding known cancer genes (first using the input or the default list, but if this fails, we use a shorter data-driven list)
             geneindels$excl = (geneindels[,1] %in% known_cancergenes)
-            if (sum(geneindels[!geneindels$excl,"n_indused"]) == 0) { # If there are no indels for the background model we do not exclude any gene
-                geneindels$excl = F 
+            min_bkg_genes = 50
+            if (sum(!geneindels$excl)<min_bkg_genes | sum(geneindels[!geneindels$excl,"n_indused"]) == 0) { # If the exclusion list is too restrictive (e.g. targeted sequencing of cancer genes), then identify a shorter list of selected genes using the substitutions.
+                newkc = as.vector(sel_cv$gene_name[sel_cv$qallsubs_cv<0.05])
+                geneindels$excl = (geneindels[,1] %in% newkc)
+                if (sum(!geneindels$excl)<min_bkg_genes | sum(geneindels[!geneindels$excl,"n_indused"]) == 0) { # If the new exclusion list is still too restrictive, then do not apply a restriction.
+                    geneindels$excl = F
+                    message("    No gene was excluded from the background indel model.")
+                } else {
+                    message(sprintf("    Genes were excluded from the indel background model based on the substitution data: %s.", paste(newkc, collapse=", ")))
+                }
             }
+            
             geneindels$exp_unif = sum(geneindels[!geneindels$excl,"n_indused"]) / sum(geneindels[!geneindels$excl,"cds_length"]) * geneindels$cds_length
           
             # Negative binomial regression for indels
@@ -531,7 +542,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
                 nbrdf_all = geneindels[,c("n_indused","exp_unif")]
             } else {
                 nbrdf = cbind(geneindels[,c("n_indused","exp_unif")], covs)[!geneindels[,6],] # We exclude known drivers from the fit
-                if (nrow(genemuts)<500) { # If there are <500 genes, we run the regression without covariates
+                if (sum(!geneindels$excl)<500) { # If there are <500 genes, we run the regression without covariates
                     model = MASS::glm.nb(n_indused ~ offset(log(exp_unif)) - 1 , data = nbrdf)
                 } else {
                     model = tryCatch({

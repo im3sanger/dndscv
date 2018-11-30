@@ -108,7 +108,7 @@ In the paper above, we described a strong evidence of positive selection on soma
 
 ```{r}
 sel_cv = dndsskin$sel_cv
-print(head(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,19)]), digits = 3)
+print(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,19)], digits = 3)
 print(dndsskin$globaldnds, digits = 3)
 ```
 
