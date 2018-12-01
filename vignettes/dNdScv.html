@@ -354,6 +354,9 @@ dndsskin = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = Inf,
 <pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
 ## = Inf, : Same mutations observed in different sampleIDs. Please verify that
 ## these are independent events and remove duplicates otherwise.</code></pre>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Genes were excluded from the indel background model based on the
+## substitution data: NOTCH1, FAT1, NOTCH2, TP53, RBM10.</code></pre>
 <p>This dataset comprises of 3,408 unique somatic mutations detected by ultra-deep (~500x) targeted sequencing of 74 cancer genes in 234 small biopsies of normal human skin (epidermis) from four healthy individuals. Note that all of the mutations listed in the input table are genuinely independent events and so, again, we can safely ignore the two warnings issued by dndscv. For more details on this study see:</p>
 <p><strong>Martincorena I, <em>et al</em>. (2015) High burden and pervasive positive selection of somatic mutations in normal human skin. Science. 348(6237):880-6.</strong> doi: 10.1126/science.aaa6806.</p>
 <p>In the paper above, we described a strong evidence of positive selection on somatic mutations occurring in normal human skin throughout life. These mutations are detected as microscopic clones of mutant cells in normal skin. The dNdScv analysis below recapitulates some of the key analyses of selection in this study:</p>
@@ -429,6 +432,9 @@ dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = I
 <pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
 ## = Inf, : Same mutations observed in different sampleIDs. Please verify that
 ## these are independent events and remove duplicates otherwise.</code></pre>
+<pre><code>## Warning in dndscv(m, gene_list = target_genes, max_muts_per_gene_per_sample
+## = Inf, : Genes were excluded from the indel background model based on the
+## substitution data: NOTCH1, NOTCH2, FAT1, TP53, RBM10.</code></pre>
 <pre class="r"><code>print(dndsskin_2r$mle_submodel)</code></pre>
 <pre><code>##   name         mle       cilow      cihigh
 ## 1    t 0.001140467 0.001033675 0.001258292
@@ -439,19 +445,19 @@ dndsskin_2r = dndscv(m, gene_list=target_genes, max_muts_per_gene_per_sample = I
 <pre class="r"><code>sel_cv = dndsskin_2r$sel_cv
 print(head(sel_cv[sel_cv$qglobal_cv&lt;0.1, c(1:10,19)]), digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv wind_cv
-## 48    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  19.638
-## 49    NOTCH2     8   106    21     9    25    5.54   20.12   20.12   8.322
-## 27      FAT1    20    68    26     8    18    1.44   13.42   13.42   3.228
-## 73      TP53     9    43    11     7     7    3.26   13.72   13.72  14.619
-## 50    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.898
-## 63     RBM10     6    14     8     2     1    1.15    7.13    7.13   0.884
+## 48    NOTCH1    20   224    51    32    61    5.07   25.93   25.93  18.487
+## 49    NOTCH2     8   106    21     9    25    5.54   20.12   20.12   7.834
+## 27      FAT1    20    68    26     8    18    1.44   13.42   13.42   3.038
+## 73      TP53     9    43    11     7     7    3.26   13.72   13.72  13.762
+## 50    NOTCH3    15    35     8     2    11    1.09    4.25    4.25   3.670
+## 63     RBM10     6    14     8     2     1    1.15    7.13    7.13   0.832
 ##    qglobal_cv
 ## 48   0.00e+00
 ## 49   0.00e+00
 ## 27   0.00e+00
-## 73   1.92e-13
-## 50   2.27e-04
-## 63   1.21e-02</code></pre>
+## 73   6.97e-13
+## 50   1.03e-03
+## 63   1.22e-02</code></pre>
 <p>In general, the full trinucleotide model is recommended for cancer genomic datasets as it typically provides the least biased dN/dS estimates. The impact of using simplistic mutation models can be considerable on global dN/dS ratios (see Martincorena <em>et al</em>., 2017), and can lead to false signals of negative or positive selection. In general, the impact of simple substitution models on gene-level inferences of selection tends to be smaller. AIC model selection can be easily used:</p>
 <pre class="r"><code>AIC(dndsskin$poissmodel)</code></pre>
 <pre><code>## [1] 1962.259</code></pre>
