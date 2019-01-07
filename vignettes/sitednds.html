@@ -229,126 +229,130 @@ div.tocify {
 <h3>Sitewise dN/dS ratios in a cancer dataset</h3>
 <p>As a small example, in this tutorial we will use public somatic mutation calls from bladder cancers from TCGA. To reduce the risk of false positives and increase the signal to noise ratio, this example will only consider mutations in Cancer Gene Census genes (v81).</p>
 <pre class="r"><code>library(&quot;dndscv&quot;)
-data(&quot;dataset_tcgablca&quot;, library=&quot;dndscv&quot;) # Loading the bladder cancer data
-data(&quot;cancergenes_cgc81&quot;, library=&quot;dndscv&quot;) # Loading the genes in the Cancer Gene Census (v81)
+data(&quot;dataset_tcgablca&quot;, package=&quot;dndscv&quot;) # Loading the bladder cancer data
+data(&quot;cancergenes_cgc81&quot;, package=&quot;dndscv&quot;) # Loading the genes in the Cancer Gene Census (v81)
 dndsout = dndscv(mutations, outmats=T, gene_list=known_cancergenes)</code></pre>
 <p>The <em>sitednds</em> function takes the output of <em>dndscv</em> as input. In order for the dndsout object to be compatible with <em>sitednds</em>, users must use the “outmats=T” argument in <em>dndscv</em>. After running <em>dndscv</em>, we can evaluate the results at the gene level as explained in the main tutorial of <em>dndscv</em>:</p>
 <pre class="r"><code>sel_cv = dndsout$sel_cv
 print(head(sel_cv, 10), digits = 3) # Printing the top 10 genes by q-value</code></pre>
-<pre><code>##     gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv
-## 563      TP53     5   136    39     5    26 33.2037    92.9    92.9
-## 413    PIK3CA     3    83     0     0     0 10.9504     0.0     0.0
-## 23     ARID1A     6    37    44     6    28  2.7238    32.5    32.5
-## 275     KDM6A     4    21    33     9    39  2.2811    30.2    30.2
-## 288     KMT2D    10    52    54     9    27  1.7665    18.9    18.9
-## 460       RB1     1     8    34    14    18  1.5938    63.5    63.5
-## 525     STAG2     7    12    23     2    17  0.8537    13.4    13.4
-## 331     MLLT3    43     4     0     0     3  0.0581     0.0     0.0
-## 574      TSC1     4    10    12     4     5  1.7890    26.8    26.8
-## 155     EP300     2    39    20     1     8  4.7299    17.7    17.7
+<pre><code>##           gene_name n_syn n_mis n_non n_spl n_ind wmis_cv wnon_cv wspl_cv
+## 564            TP53     5   136    39     5    26 36.1349   101.0   101.0
+## 23           ARID1A     6    37    44     6    28  2.8878    34.4    34.4
+## 289           KMT2D    10    52    54     9    27  1.7105    18.3    18.3
+## 276           KDM6A     4    21    33     9    39  1.8506    24.5    24.5
+## 461             RB1     1     8    34    14    18  1.8310    73.0    73.0
+## 526           STAG2     7    12    23     2    17  0.8160    12.8    12.8
+## 97  CDKN2A.p16INK4a     0    13     3     2     5 15.9320    95.8    95.8
+## 96    CDKN2A.p14arf     1    15     0     2     5 17.5753    43.9    43.9
+## 332           MLLT3    43     4     0     0     3  0.0614     0.0     0.0
+## 156           EP300     2    39    20     1     8  4.7957    17.9    17.9
 ##     wind_cv  pmis_cv ptrunc_cv pallsubs_cv  pind_cv  qmis_cv qtrunc_cv
-## 563   80.74 0.00e+00  0.00e+00    0.00e+00 8.65e-10 0.00e+00  0.00e+00
-## 413    0.00 2.22e-16  1.47e-01    0.00e+00 1.00e+00 6.68e-14  7.87e-01
-## 23    14.99 2.52e-03  0.00e+00    0.00e+00 1.41e-03 7.97e-02  0.00e+00
-## 275   33.87 3.93e-02  0.00e+00    0.00e+00 5.11e-06 5.22e-01  0.00e+00
-## 288    5.97 4.86e-02  0.00e+00    0.00e+00 2.98e-02 5.63e-01  0.00e+00
-## 460   23.71 4.16e-01  0.00e+00    0.00e+00 1.80e-04 8.64e-01  0.00e+00
-## 525   16.39 7.08e-01  1.11e-13    5.55e-16 1.25e-03 9.53e-01  9.52e-12
-## 331    6.45 6.66e-15  4.87e-04    4.11e-15 5.16e-02 1.34e-12  1.27e-02
-## 574    5.25 2.23e-01  9.60e-14    4.01e-13 5.53e-02 7.21e-01  9.52e-12
-## 155    4.05 3.71e-05  3.74e-12    2.44e-11 7.31e-02 1.72e-03  2.82e-10
+## 564  255.74 0.00e+00  0.00e+00    0.00e+00 2.32e-43 0.00e+00  0.00e+00
+## 23    39.69 1.38e-03  0.00e+00    0.00e+00 1.68e-24 4.64e-02  0.00e+00
+## 289    7.62 6.44e-02  0.00e+00    0.00e+00 8.40e-09 5.67e-01  0.00e+00
+## 276   41.97 1.30e-01  0.00e+00    0.00e+00 2.45e-31 6.39e-01  0.00e+00
+## 461  112.48 2.93e-01  0.00e+00    0.00e+00 1.02e-25 7.81e-01  0.00e+00
+## 526   28.42 6.31e-01  3.02e-13    7.77e-16 5.65e-15 9.47e-01  3.04e-11
+## 97    94.31 1.28e-07  2.78e-08    1.93e-11 9.72e-09 9.66e-06  1.68e-06
+## 96    98.63 2.26e-09  1.20e-03    8.01e-10 7.80e-09 2.27e-07  2.79e-02
+## 332    4.24 2.80e-14  6.69e-04    1.80e-14 4.18e-02 8.44e-12  1.61e-02
+## 156    8.24 3.52e-05  3.61e-12    2.37e-11 6.30e-05 1.51e-03  3.11e-10
 ##     qallsubs_cv pglobal_cv qglobal_cv
-## 563    0.00e+00   0.00e+00   0.00e+00
-## 413    0.00e+00   0.00e+00   0.00e+00
+## 564    0.00e+00   0.00e+00   0.00e+00
 ## 23     0.00e+00   0.00e+00   0.00e+00
-## 275    0.00e+00   0.00e+00   0.00e+00
-## 288    0.00e+00   0.00e+00   0.00e+00
-## 460    0.00e+00   0.00e+00   0.00e+00
-## 525    4.77e-14   0.00e+00   0.00e+00
-## 331    3.09e-13   7.88e-15   5.93e-13
-## 574    2.68e-11   7.20e-13   4.81e-11
-## 155    1.34e-09   5.01e-11   3.02e-09</code></pre>
+## 289    0.00e+00   0.00e+00   0.00e+00
+## 276    0.00e+00   0.00e+00   0.00e+00
+## 461    0.00e+00   0.00e+00   0.00e+00
+## 526    7.81e-14   0.00e+00   0.00e+00
+## 97     1.29e-09   0.00e+00   0.00e+00
+## 96     4.02e-08   2.22e-16   1.67e-14
+## 332    1.36e-12   2.70e-14   1.81e-12
+## 156    1.39e-09   5.24e-14   3.16e-12</code></pre>
 <p>The table above reveals a problem with this dataset. The gene <em>MLLT3</em> appears as significant in <em>dndscv</em> (i.e. it violates the neutral null model of dN/dS=1), but due to a very large excess of synonymous mutations (notice the high number of synonymous mutations and the very low dN/dS values). We can further confirm that the low dN/dS value in this gene is due to an excess of synonymous mutations and not genuine negative selection by comparing the observed number of synonymous mutations in the gene (43) and the expected number (<em>exp_syn</em> and <em>exp_syn_cv</em> columns below):</p>
 <pre class="r"><code>print(dndsout$genemuts[dndsout$genemuts$gene_name==&quot;MLLT3&quot;,])</code></pre>
 <pre><code>##     gene_name n_syn n_mis n_non n_spl  exp_syn  exp_mis   exp_non
-## 331     MLLT3    43     4     0     0 1.258879 3.977127 0.2244556
+## 332     MLLT3    43     4     0     0 1.258753 3.974196 0.2248953
 ##       exp_spl exp_syn_cv
-## 331 0.1511442   4.087832</code></pre>
+## 332 0.1507168   3.632818</code></pre>
 <p>Thus, <em>MLLT3</em> is a false positive, most likely due to recurrent artefacts or SNP contamination in the gene. A careful examination of all statistically significant genes in the dataset reveals other likely false positives. As we will see below, this will also affect the sitewise dN/dS analysis.</p>
 <p>To run the sitewise dN/dS model on this dataset, we only need to input the <em>dndsout</em> object into the <em>sitednds</em> function. By default, <em>sitednds</em> will calculate sitewise dN/dS ratios and p-values for sites mutated at least two times (use the argument <em>min_recurr</em> to control this). While p-values are only provided for recurrently mutated sites, false discovery adjustment corrects for all possible changes.</p>
 <pre class="r"><code>hotspots = sitednds(dndsout) # Running sitewise dN/dS
 print(hotspots$theta) # Overdispersion (unexplained variation of the mutation rate across sites)</code></pre>
 <pre><code>##        MLE    CI95low  CI95_high 
-## 0.07066467 0.05327883 0.09799202</code></pre>
+## 0.07261735 0.05468222 0.10069983</code></pre>
 <p>You can see that the maximum-likelihood estimate of <em>theta</em> is very low. This reflects considerable variation in the mutation rate across sites, not explained by the trinucleotide context or by the estimated relative mutation rate of the gene. <em>sitednds</em> takes this into account when calculating p-values. If there is large uncertainty in the estimation of <em>theta</em>, users can choose to use the lower bound estimate of theta instead of the maximum-likelihood estimate, when calculating p-values (use the argument <em>theta_option=“conservative”</em> in <em>sitednds</em>).</p>
 <p>The main output of <em>sitednds</em> is a table with all hotspots studied, including their position, the gene affected, the aminoacid change induced, the number of times that the mutation was observed, the expected number of mutations at this site by chance under neutrality (mu) and the dN/dS ratio. The table also contains p-values and q-values for the probability of observing that many mutations at the site by chance. Again, please treat these p-values with caution.</p>
 <pre class="r"><code>print(head(hotspots$recursites,10)) # First 10 lines of the table of hotspots</code></pre>
-<pre><code>##    chr       pos   gene aachange     impact ref3_cod mut3_cod freq
-## 1    4   1803568  FGFR3    S249C   Missense      TCC      TGC   27
-## 4   17  37868208  ERBB2    S310F   Missense      TCC      TTC   16
-## 5   17   7577538   TP53    R248Q   Missense      CGG      CAG   15
-## 10  19  45867687  ERCC2    N238S   Missense      AAC      AGC    9
-## 2    3 178936091 PIK3CA    E545K   Missense      TGA      TAA   23
-## 7    9  20414343  MLLT3    S167S Synonymous      GTA      GCA   11
-## 6    9  20414340  MLLT3    S168S Synonymous      GCA      GTA   12
-## 11   4 153247289  FBXW7    R505G   Missense      CCG      CGG    8
-## 3    3 178936082 PIK3CA    E542K   Missense      TGA      TAA   17
-## 12   4   1806099  FGFR3    Y375C   Missense      TAT      TGT    8
-##              mu      dnds         pval         qval
-## 1  0.0037439687  7211.599 3.167070e-38 3.393423e-32
-## 4  0.0045908327  3485.206 2.161635e-22 1.158065e-16
-## 5  0.0048180300  3113.306 7.438591e-21 2.656745e-15
-## 10 0.0007364648 12220.543 1.263448e-20 3.384370e-15
-## 2  0.0150171704  1531.580 1.898420e-20 4.068205e-15
-## 7  0.0035621239  3088.045 2.551937e-17 4.557211e-12
-## 6  0.0050285300  2386.383 5.691537e-17 8.711881e-12
-## 11 0.0013598354  5883.065 1.733744e-16 2.322071e-11
-## 3  0.0150171704  1132.037 8.646032e-16 1.029330e-10
-## 12 0.0024510164  3263.952 1.733817e-14 1.857735e-09</code></pre>
+<pre><code>##    chr       pos ref mut   gene aachange     impact ref3_cod mut3_cod freq
+## 1    4   1803568   C   G  FGFR3    S249C   Missense      TCC      TGC   27
+## 2   17   7577538   C   T   TP53    R248Q   Missense      CGG      CAG   15
+## 3   17  37868208   C   T  ERBB2    S310F   Missense      TCC      TTC   16
+## 4   19  45867687   T   C  ERCC2    N238S   Missense      AAC      AGC    9
+## 5    9  20414343   A   G  MLLT3    S167S Synonymous      GTA      GCA   11
+## 6    9  20414340   G   A  MLLT3    S168S Synonymous      GCA      GTA   12
+## 7    3 178936091   G   A PIK3CA    E545K   Missense      TGA      TAA   23
+## 8    4 153247289   G   C  FBXW7    R505G   Missense      CCG      CGG    8
+## 9   17   7577085   C   T   TP53    E285K   Missense      AGA      AAA   10
+## 10   4   1806099   A   G  FGFR3    Y375C   Missense      TAT      TGT    8
+##             mu     dnds         pval         qval
+## 1  0.004349085 6208.203 7.561905e-37 8.104547e-31
+## 2  0.004297050 3490.767 1.034825e-21 5.545420e-16
+## 3  0.005381862 2972.949 1.615659e-21 5.771996e-16
+## 4  0.001419861 6338.647 3.491422e-18 9.354915e-13
+## 5  0.003143547 3499.232 5.292417e-18 1.134440e-12
+## 6  0.004582783 2618.496 1.514320e-17 2.704980e-12
+## 7  0.022757216 1010.668 2.543084e-17 3.893680e-12
+## 8  0.001499587 5334.803 3.117442e-16 4.176437e-11
+## 9  0.005642605 1772.231 3.591526e-14 4.276949e-09
+## 10 0.002847343 2809.637 4.627725e-14 4.959811e-09</code></pre>
 <p>We can choose a significance cutoff (e.g. q-value&lt;0.05) to list the significant hotspots in the dataset:</p>
 <pre class="r"><code>signifsites = hotspots$recursites[hotspots$recursites$qval&lt;0.05, ]
 print(signifsites[,c(&quot;gene&quot;,&quot;aachange&quot;,&quot;impact&quot;,&quot;freq&quot;,&quot;dnds&quot;,&quot;qval&quot;)], digits=5)</code></pre>
-<pre><code>##         gene aachange           impact freq     dnds       qval
-## 1      FGFR3    S249C         Missense   27  7211.60 3.3934e-32
-## 4      ERBB2    S310F         Missense   16  3485.21 1.1581e-16
-## 5       TP53    R248Q         Missense   15  3113.31 2.6567e-15
-## 10     ERCC2    N238S         Missense    9 12220.54 3.3844e-15
-## 2     PIK3CA    E545K         Missense   23  1531.58 4.0682e-15
-## 7      MLLT3    S167S       Synonymous   11  3088.05 4.5572e-12
-## 6      MLLT3    S168S       Synonymous   12  2386.38 8.7119e-12
-## 11     FBXW7    R505G         Missense    8  5883.06 2.3221e-11
-## 3     PIK3CA    E542K         Missense   17  1132.04 1.0293e-10
-## 12     FGFR3    Y375C         Missense    8  3263.95 1.8577e-09
-## 8       TP53    E285K         Missense   10  1580.79 1.2625e-08
-## 9       TP53    R280T         Missense   10  1295.21 7.2004e-08
-## 32     HLA-A     Q78R         Missense    4  9481.01 2.0588e-06
-## 15     MLLT3    S166S       Synonymous    7  1392.06 5.5267e-06
-## 30    PIK3CA   H1047R         Missense    4  3616.29 8.1711e-05
-## 18    NFE2L2     R34G         Missense    5  1721.93 1.0209e-04
-## 31     FGFR3    G372C         Missense    4  3311.32 1.0209e-04
-## 37      NAB2    P211P       Synonymous    3  9683.81 1.2965e-04
-## 34      HRAS     Q61K         Missense    3  8845.83 1.6099e-04
-## 22      TP53    E336*         Nonsense    4  2257.94 3.9128e-04
-## 13     KDM6A    Q562*         Nonsense    8   557.10 4.1099e-04
-## 21      KRAS     G12D         Missense    4  2176.22 4.1099e-04
-## 17      TP53    S241F         Missense    5  1141.36 5.3976e-04
-## 19     MLLT3    S188S       Synonymous    5   994.33 9.9402e-04
-## 41     ERCC2     Y72C         Missense    3  3374.04 2.1660e-03
-## 14      TP53    Q331*         Nonsense    7   475.12 2.6117e-03
-## 94     ZFHX3   G3519G       Synonymous    2  9068.42 1.4560e-02
-## 33     MLLT3    S155S       Synonymous    4   795.46 1.5670e-02
-## 110     TP53    D259V         Missense    2  8377.69 1.5670e-02
-## 24      TP53    R248W         Missense    4   781.73 1.5670e-02
-## 23      TP53    R273C         Missense    4   758.39 1.7004e-02
-## 35     ERBB3    V104L         Missense    3  1516.34 1.8004e-02
-## 84  HSP90AA1    K401M         Missense    2  7047.70 1.9699e-02
-## 145    FGFR3    K652E         Missense    2  6687.28 2.1104e-02
-## 169    KDM6A        - Essential_Splice    2  6610.46 2.1104e-02
-## 143    FGFR3    S373C         Missense    2  4831.66 3.8323e-02
-## 69      HRAS     G13R         Missense    2  4754.73 3.8499e-02
-## 27     SF3B1    E902K         Missense    4   574.17 3.9289e-02
-## 112     TP53    G245V         Missense    2  4506.64 4.0638e-02
-## 74      KRAS     G12C         Missense    2  4348.76 4.2538e-02</code></pre>
+<pre><code>##        gene aachange           impact freq     dnds       qval
+## 1     FGFR3    S249C         Missense   27  6208.20 8.1045e-31
+## 2      TP53    R248Q         Missense   15  3490.77 5.5454e-16
+## 3     ERBB2    S310F         Missense   16  2972.95 5.7720e-16
+## 4     ERCC2    N238S         Missense    9  6338.65 9.3549e-13
+## 5     MLLT3    S167S       Synonymous   11  3499.23 1.1344e-12
+## 6     MLLT3    S168S       Synonymous   12  2618.50 2.7050e-12
+## 7    PIK3CA    E545K         Missense   23  1010.67 3.8937e-12
+## 8     FBXW7    R505G         Missense    8  5334.80 4.1764e-11
+## 9      TP53    E285K         Missense   10  1772.23 4.2769e-09
+## 10    FGFR3    Y375C         Missense    8  2809.64 4.9598e-09
+## 11   PIK3CA    E542K         Missense   17   747.02 1.7692e-08
+## 12     TP53    R280T         Missense   10  1453.35 2.0195e-08
+## 13    HLA-A     Q78R         Missense    4 13446.24 4.7353e-07
+## 14    MLLT3    S166S       Synonymous    7  1527.46 2.5800e-06
+## 15   NFE2L2     R34G         Missense    5  2050.39 4.4670e-05
+## 16     KRAS     G12D         Missense    4  3146.49 1.2288e-04
+## 17     NAB2    P211P       Synonymous    3  9736.56 1.2832e-04
+## 18    FGFR3    G372C         Missense    4  2851.04 1.6110e-04
+## 19     HRAS     Q61K         Missense    3  8318.78 1.8378e-04
+## 20     TP53    E336*         Nonsense    4  2502.57 2.4215e-04
+## 21   PIK3CA   H1047R         Missense    4  2391.66 2.7557e-04
+## 22     TP53    S241F         Missense    5  1278.51 2.9762e-04
+## 23    MLLT3    S188S       Synonymous    5  1091.04 6.0617e-04
+## 24     TP53    Q331*         Nonsense    7   531.95 1.2608e-03
+## 25    KDM6A    Q562*         Nonsense    8   393.68 2.9892e-03
+## 26    ERBB3    V104L         Missense    3  2434.11 5.2161e-03
+## 27    MLLT3    S155S       Synonymous    4   872.83 1.0659e-02
+## 28     TP53    R248W         Missense    4   851.59 1.0965e-02
+## 29     TP53    R273C         Missense    4   850.23 1.0965e-02
+## 30     TP53    D259V         Missense    2  9391.98 1.1582e-02
+## 31    ERCC2     Y72C         Missense    3  1750.79 1.1582e-02
+## 32 HSP90AA1    K401M         Missense    2  8465.73 1.3744e-02
+## 33    ZFHX3   G3519G       Synonymous    2  7276.00 1.8029e-02
+## 34    SF3B1    E902K         Missense    4   687.31 2.0901e-02
+## 35     KRAS     G12C         Missense    2  6258.63 2.2955e-02
+## 36    FGFR3    K652E         Missense    2  5756.20 2.6369e-02
+## 37     TP53    E271K         Missense    5   414.25 3.2260e-02
+## 38     TP53    G245V         Missense    2  5053.17 3.2386e-02
+## 39     TP53    K132N         Missense    4   581.34 3.4074e-02
+## 40   RANBP2    C815R         Missense    2  4612.17 3.6905e-02
+## 41     HRAS     G13R         Missense    2  4476.49 3.7452e-02
+## 42    KDM6A        . Essential_Splice    2  4467.46 3.7452e-02
+## 43    FGFR3    S373C         Missense    2  3974.00 4.6095e-02
+## 44     KRAS     G12V         Missense    2  3932.03 4.6095e-02</code></pre>
 <p>Careful examination of the significant hotspots reveals many well-known cancer-driver hotspots, including in <em>FGFR3</em> (e.g. S249, Y375, G372, K652), <em>TP53</em> (e.g. R248), <em>PIK3CA</em> (e.g. E542, H1047), <em>HRAS</em> (Q61, G13), <em>KRAS</em> (G12), <em>ERBB2</em> (S310), <em>ERBB3</em> (V104), <em>SF3B1</em> (E902), etc. Note that the exact aminoacid position affected depends on the exact protein isoform used for annotation (see Ensembl protein IDs in <em>dndsout$annotmuts</em>).</p>
 <p>However, the table of significant hotspots also contains a considerable number of likely false positives, including multiple synonymous sites in <em>MLLT3</em>. A proper analysis of these data would require careful reevaluation and improvement of the mutation calls, before repeating this analysis. Significant improvements to somatic mutation calls against recurrent artefacts can be achieved by using an unmatched normal panel and by more stringent filtering of germline SNP contamination.</p>
 <p>The TCGA mutation calls used in this example are an old version and it is likely that more recent versions are much less affected by artefacts. However, I decided to use this dataset as an example to highlight the importance of critically examining the results and the impact of recurrent artefacts on driver discovery at gene and site level.</p>
@@ -366,61 +370,63 @@ dndsout = dndscv(mutations, outmats=T, gene_list=target_genes, max_coding_muts_p
 <pre class="r"><code>sel_cv = dndsout$sel_cv
 print(sel_cv[sel_cv$qglobal_cv&lt;0.05, c(1:6,19)], digits = 3)</code></pre>
 <pre><code>##    gene_name n_syn n_mis n_non n_spl n_ind qglobal_cv
-## 72      TP53     9   323    50    41    97   0.00e+00
-## 47    NOTCH1    29   831   278   134   572   0.00e+00
-## 48    NOTCH2     8   225    59    26   127   0.00e+00
-## 49    NOTCH3    11   140    93    37    82   0.00e+00
-## 26      FAT1    19   127   113    13   166   0.00e+00
+## 73      TP53     9   323    50    41    97   0.00e+00
+## 48    NOTCH1    29   831   278   134   572   0.00e+00
+## 49    NOTCH2     8   225    59    26   127   0.00e+00
+## 50    NOTCH3    11   140    93    37    82   0.00e+00
+## 27      FAT1    19   127   113    13   166   0.00e+00
 ## 7     ARID1A     8    28    34     5    68   0.00e+00
-## 18      CUL3     7    34     9    10    20   9.79e-10
-## 3      AJUBA     1    22     9     0    30   7.38e-08
-## 13     CCND1     2    11     9     0     1   1.27e-05
-## 54    PIK3CA     2    45     1     0     4   9.77e-04
-## 41     KMT2D    21    69    12     4    43   1.45e-02
-## 8      ARID2    12    28     9     2    12   1.45e-02
-## 46    NFE2L2     5    27     1     0     8   4.32e-02</code></pre>
+## 3      AJUBA     1    22     9     0    30   0.00e+00
+## 19      CUL3     7    34     9    10    20   1.33e-13
+## 13     CCND1     2    11     9     0     1   1.29e-05
+## 55    PIK3CA     2    45     1     0     4   9.14e-04
+## 42     KMT2D    21    69    12     4    43   2.14e-03
+## 47    NFE2L2     5    27     1     0     8   4.57e-03
+## 8      ARID2    12    28     9     2    12   5.13e-03
+## 40     KMT2A    15    68     8     2    34   2.73e-02
+## 74      TP63     5    29     1     1     6   4.78e-02</code></pre>
 <pre class="r"><code>print(dndsout$globaldnds, digits = 3)</code></pre>
 <pre><code>##      name  mle cilow cihigh
 ## wmis wmis 2.07  1.90   2.27
-## wnon wnon 7.80  6.90   8.81
+## wnon wnon 7.82  6.92   8.83
 ## wspl wspl 8.31  7.10   9.73
-## wtru wtru 7.96  7.12   8.89
-## wall wall 2.55  2.33   2.78</code></pre>
+## wtru wtru 7.97  7.14   8.90
+## wall wall 2.55  2.34   2.78</code></pre>
 <p>To apply the <em>sitednds</em> model, we simply use the following code. Only the top 30 hotspots by q-value are shown, but a total of 133 sites are identified as significant with 5% FDR.</p>
 <pre class="r"><code>hotspots = sitednds(dndsout) # Running sitewise dN/dS
 signifsites = hotspots$recursites[hotspots$recursites$qval&lt;0.05, ]
 head(signifsites[,c(&quot;gene&quot;,&quot;aachange&quot;,&quot;impact&quot;,&quot;freq&quot;,&quot;dnds&quot;,&quot;qval&quot;)], 30)</code></pre>
-<pre><code>##       gene aachange           impact freq      dnds         qval
-## 22  NOTCH1    F357S         Missense    5 3278.1422 2.472547e-06
-## 5   NOTCH1    N390S         Missense    6 1859.8314 2.472547e-06
-## 14  NOTCH1    I471T         Missense    5 1438.1954 8.771541e-05
-## 16  NOTCH1    G443D         Missense    5 1159.5112 1.230187e-04
-## 20  NOTCH1    G394D         Missense    5 1159.5112 1.230187e-04
-## 18  NOTCH1        - Essential_Splice    5 1147.8554 1.230187e-04
-## 21  NOTCH1    S385F         Missense    5 1103.4321 1.230187e-04
-## 36  NOTCH1    Y550*         Nonsense    4 2013.4168 1.230187e-04
-## 3   NOTCH1    N718S         Missense    6  723.3450 1.230187e-04
-## 51  NOTCH1    D352Y         Missense    4 1604.1840 2.564100e-04
-## 8     TP53    M246V         Missense    5  850.4127 2.746911e-04
-## 11  PIK3CA   H1047R         Missense    5  850.4127 2.746911e-04
-## 38  NOTCH1    I471F         Missense    4 1090.1400 8.903182e-04
-## 50  NOTCH1    G367D         Missense    4  984.9322 1.161683e-03
-## 90  NOTCH1    V717V       Synonymous    3 2256.3406 1.161683e-03
-## 39  NOTCH1    D469Y         Missense    4  931.0297 1.161683e-03
-## 47  NOTCH1    D412Y         Missense    4  931.0297 1.161683e-03
-## 52  NOTCH1    W327C         Missense    4  931.0297 1.161683e-03
-## 35  NOTCH1        - Essential_Splice    4  918.2844 1.161683e-03
-## 104 NOTCH1    N431H         Missense    3 2174.2699 1.161683e-03
-## 49  NOTCH1    G384S         Missense    4  858.8935 1.385771e-03
-## 101 NOTCH1    C440R         Missense    3 1935.6624 1.458694e-03
-## 4   NOTCH1    E455K         Missense    6  386.9076 1.458694e-03
-## 60    TP53    L257V         Missense    3 1773.5691 1.770714e-03
-## 10    TP53    Y220C         Missense    5  466.5853 2.186130e-03
-## 7   NOTCH1    G310R         Missense    6  344.0928 2.388000e-03
-## 31    TP53    H193R         Missense    4  680.3302 2.633837e-03
-## 85  NOTCH1   C1238*         Nonsense    3 1363.8255 3.197493e-03
-## 1     TP53    R273C         Missense    6  318.4710 3.197493e-03
-## 56    TP53    R282G         Missense    3 1323.4977 3.363701e-03</code></pre>
+<pre><code>##      gene aachange           impact freq      dnds         qval
+## 1  NOTCH1    F357S         Missense    5 3279.5143 2.521072e-06
+## 2  NOTCH1    N390S         Missense    6 1860.5378 2.521072e-06
+## 3  NOTCH1    I471T         Missense    5 1438.3442 8.921196e-05
+## 4  NOTCH1    G443D         Missense    5 1162.6781 1.254528e-04
+## 5  NOTCH1    G394D         Missense    5 1162.6781 1.254528e-04
+## 6  NOTCH1        . Essential_Splice    5 1150.1452 1.254528e-04
+## 7  NOTCH1    S385F         Missense    5 1103.8104 1.254528e-04
+## 8  NOTCH1    Y550*         Nonsense    4 2014.8063 1.254528e-04
+## 9  NOTCH1    N718S         Missense    6  723.4757 1.254528e-04
+## 10 NOTCH1    D352Y         Missense    4 1607.8249 2.575694e-04
+## 11   TP53    M246V         Missense    5  851.6114 2.775366e-04
+## 12 PIK3CA   H1047R         Missense    5  851.6114 2.775366e-04
+## 13 NOTCH1    I471F         Missense    4 1091.4795 8.978909e-04
+## 14 NOTCH1    G367D         Missense    4  986.9852 1.116060e-03
+## 15   TP53    T125T       Synonymous    4  955.4674 1.116060e-03
+## 16 NOTCH1    V717V       Synonymous    3 2260.2324 1.116060e-03
+## 17 NOTCH1    D469Y         Missense    4  934.8717 1.116060e-03
+## 18 NOTCH1    D412Y         Missense    4  934.8717 1.116060e-03
+## 19 NOTCH1    W327C         Missense    4  934.8717 1.116060e-03
+## 20 NOTCH1        . Essential_Splice    4  920.1162 1.116060e-03
+## 21 NOTCH1    N431H         Missense    3 2174.7189 1.116060e-03
+## 22 NOTCH1    G384S         Missense    4  861.3480 1.325583e-03
+## 23 NOTCH1    C440R         Missense    3 1938.6707 1.402678e-03
+## 24 NOTCH1    E455K         Missense    6  388.0714 1.402678e-03
+## 25   TP53    L257V         Missense    3 1775.2181 1.711066e-03
+## 26   TP53    Y220C         Missense    5  466.5666 2.136849e-03
+## 27 NOTCH1    G310R         Missense    6  345.8816 2.281085e-03
+## 28   TP53    H193R         Missense    4  681.2891 2.559081e-03
+## 29   TP53    R273C         Missense    6  320.6674 3.087805e-03
+## 30 NOTCH1   C1238*         Nonsense    3 1366.7624 3.087805e-03</code></pre>
 <p>Remarkably, owing to the very large number of mutant clones identified in this study, this analysis finds a large number of statistically-significant sites. Reassuringly, they are all in genes detected under positive selection in the original publication (Martincorena <em>et al</em>, 2018). Among other sites this includes 95 sites in <em>NOTCH1</em>, 31 sites in <em>TP53</em> and the well-known <em>PIK3CA</em> hotspot H1047R.</p>
 <p>This analysis also identifies a known driver hotspot in a synonymous site of <em>TP53</em> (T125T), which is known to affect splicing of <em>TP53</em>. Intriguingly, it also identifies a synonymous site in <em>NOTCH1</em>, which deserves careful follow-up analysis. Apart from these two synonymous sites, all other 131 significant hotspots are non-synonymous.</p>
 </div>

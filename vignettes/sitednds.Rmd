@@ -23,8 +23,8 @@ As a small example, in this tutorial we will use public somatic mutation calls f
 
 ```{r message=FALSE, warning=FALSE}
 library("dndscv")
-data("dataset_tcgablca", library="dndscv") # Loading the bladder cancer data
-data("cancergenes_cgc81", library="dndscv") # Loading the genes in the Cancer Gene Census (v81)
+data("dataset_tcgablca", package="dndscv") # Loading the bladder cancer data
+data("cancergenes_cgc81", package="dndscv") # Loading the genes in the Cancer Gene Census (v81)
 dndsout = dndscv(mutations, outmats=T, gene_list=known_cancergenes)
 ```
 

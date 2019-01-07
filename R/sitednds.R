@@ -42,7 +42,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     
     # Counts of observed mutations
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
-    annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
+    annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$ref,annotsubs$mut,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
     annotsubs = annotsubs[which(annotsubs$ref!=annotsubs$mut),]
     freqs = sort(table(annotsubs$trisub), decreasing=T)
     
@@ -66,7 +66,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     nvec = array(0, length(rvec)) # Initialising the vector with observed mutation counts per site
     
     mutsites = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
-    colnames(mutsites) = c("chr","pos","gene","aachange","impact","ref3_cod","mut3_cod")
+    colnames(mutsites) = c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod")
     mutsites$freq = freqs
     trindex = setNames(1:192, names(sm))
     geneindex = setNames(1:length(names(relmr)), names(relmr))
@@ -124,7 +124,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites (P-values are based on the Gamma assumption underlying the negative binomial modelling)
     message("[2] Calculating site-wise dN/dS ratios and p-values...")
     
-    recursites = mutsites[mutsites$freq>=min_recurr, c("chr","pos","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
+    recursites = mutsites[mutsites$freq>=min_recurr, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
     recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")]
     
     if (theta_option=="mle") {
