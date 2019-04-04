@@ -8,14 +8,14 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. 
+The **dNdScv** R package is a group of maximum-likelihood dN/dS methods designed to quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The package contains functions to quantify dN/dS ratios for missense, nonsense and essential splice mutations, at the level of individual genes, groups of genes or at whole-genome level. The *dNdScv* method was designed to detect cancer driver genes (*i.e.* genes under positive selection in cancer) on datasets ranging from a few samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. 
 
 The background mutation rate of each gene is estimated by combining local information (synonymous mutations in the gene) and global information (variation of the mutation rate across genes, exploiting epigenomic covariates), and controlling for the sequence composition of the gene and mutational signatures. Unlike traditional implementations of dN/dS, *dNdScv* uses trinucleotide context-dependent substitution matrices to avoid common mutation biases affecting dN/dS (Greenman *et al.*, 2006).
 
 This vignette shows how to perform driver discovery and selection analyses with dNdScv in cancer sequencing data. The current version of dNdScv only supports human data, but future versions will incorporate functions to allow studies of selection on any species.
 
 Main reference:
-Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Under review*.
+Martincorena I, *et al*. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. *Cell*.
 
 ##Example 1: Driver discovery (positive selection) in cancer exomes/genomes
 
