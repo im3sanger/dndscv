@@ -9,8 +9,7 @@
 #' @param gene_list List of genes to restrict the analysis (by default, all genes in dndsout will be analysed)
 #' @param level Confidence level desired [default = 0.95]
 #'
-#' @return 'dndscv' returns a list of objects:
-#' @return - ci: Confidence intervals for the dN/dS ratios per gene under the dNdScv model.
+#' @return ci: Dataframe with the confidence intervals for dN/dS ratios per gene under the dNdScv model.
 #' 
 #' @export
 

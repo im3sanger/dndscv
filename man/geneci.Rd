@@ -14,9 +14,7 @@ geneci(dndsout, gene_list = NULL, level = 0.95)
 \item{level}{Confidence level desired [default = 0.95]}
 }
 \value{
-'dndscv' returns a list of objects:
-
-- ci: Confidence intervals for the dN/dS ratios per gene under the dNdScv model.
+ci: Dataframe with the confidence intervals for dN/dS ratios per gene under the dNdScv model.
 }
 \description{
 Function to calculate confidence intervals for dN/dS values per gene under the dNdScv model using profile likelihood. To generate a valid dndsout input object for this function, use outmats=T when running dndscv.
