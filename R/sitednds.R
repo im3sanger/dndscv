@@ -1,6 +1,6 @@
 #' sitednds
 #'
-#' Function to estimate site-wise dN/dS values and p-values against neutrality. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. A considerable number of significant synonymous sites may reflect a problem with the data. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel). In the future, this function may be extended to perform inferences at a codon level instead of at a single-base level.
+#' Function to estimate site-wise dN/dS values and p-values against neutrality. To generate a valid input object for this function, use outmats=T when running dndscv. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. A considerable number of significant synonymous sites may reflect a problem with the data. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel). In the future, this function may be extended to perform inferences at a codon level instead of at a single-base level.
 #'
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' 

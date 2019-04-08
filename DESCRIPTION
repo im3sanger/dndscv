@@ -2,7 +2,7 @@ Package: dndscv
 Title: Poisson-based dN/dS models to quantify natural selection in somatic evolution
 Type: Package
 Version: 0.0.1.0
-Date: 2018-12-10
+Date: 2019-04-08
 Author: Inigo Martincorena
 Maintainer: Inigo Martincorena <im3@sanger.ac.uk>
 Description: This package contains functions for studying selection on coding sequences using a Poisson implementation of dN/dS. A Poisson model of dN/dS facilitates the study of selection beyond traditional codon models, including complex context-dependent mutation effects and selection on nonsense and splice site mutations. This model is best suited for resequencing studies, with very low density of mutations per base pair. The model was initially developed for cancer genome sequencing studies, and specific functions are provided to perform driver gene discovery using the dNdScv method on human cancer genomic data.

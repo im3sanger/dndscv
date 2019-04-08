@@ -3,7 +3,7 @@ dndscv
 
 Description
 ---
-The **dNdScv** R package is a suite of maximum-likelihood dN/dS methods designed to 
+The **dNdScv** R package is a group of maximum-likelihood dN/dS methods designed to 
 	quantify selection in cancer and somatic evolution (Martincorena *et al.*, 2017). The 
 	package contains functions to quantify dN/dS ratios for missense, nonsense and 
 	essential splice mutations, at the level of individual genes, groups of genes or at 
@@ -20,8 +20,8 @@ The background mutation rate of each gene is estimated by combining local inform
 
 Note
 ----
-The latest version of this package (from 12 October 2018) includes support for other 
-human genome assemblies and other species.
+The latest version of this package includes support for other human genome assemblies 
+and other species.
 
 Installation
 --------

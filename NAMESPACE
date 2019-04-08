@@ -2,6 +2,7 @@
 
 export(buildref)
 export(dndscv)
+export(geneci)
 export(sitednds)
 import(Biostrings)
 import(GenomicRanges)
