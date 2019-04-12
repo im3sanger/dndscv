@@ -45,9 +45,13 @@ The input table of transcripts is a tab-delimited text file. Each row correspond
 9. **Length**: Full length of the CDS for this transcript (this is used to identify the longest coding CDS for each gene).
 10. **Strand**: Coding strand of the transcript.
 
-The *buildref* function was originally designed to use a table of transcripts from Ensembl BioMart as input. You can use the [BioMart website](https://www.ensembl.org/biomart/martview/) to download all coding transcripts from a given genome assembly for a wide range of species. Withing BioMart, click on the "Ensembl genes" database and choose your species of interest. Then use the "Attributes" menu on the left and the "Structures" option (exon-level information) to select the 10 columns needed by *buildref*. Make sure that your table has all 10 columns in the right order (see example image below). Using BioMart will generate a large tsv table with multiple transcripts per gene. *buildref* will choose the longest complete coding sequence per gene. *buildref* currently also discards transcripts with ambiguous bases (e.g. "N"). However, if you are interested in particular transcripts, you can edit the table to contain only one transcript of interest per gene. If you would like *dNdScv* to use more than one transcript for some genes with very different alternative transcripts, such as *CDKN2A*, you can assign a different gene name for each transcript of interest (e.g. *CDKN2A-1*, *CDKN2A-2*).
+The *buildref* function was originally designed to use a table of transcripts from Ensembl BioMart as input. You can use the [BioMart website](https://www.ensembl.org/biomart/martview/) to download all coding transcripts from a given genome assembly for a wide range of species. Withing BioMart, click on the "Ensembl genes" database and choose your species of interest. Then use the "Attributes" menu on the left and click on the "Structures" option (exon-level information) to select the 10 columns needed by *buildref*. Make sure that your table has all 10 columns in the right order, which you achieve by selecting each attribute in the right order (see example image below).
 
-![ ](Ensembl_BioMart_screenshot.png)
+![ ](Ensembl_BioMart_screenshot1.png)
+
+Once you have selected all attributes, click on the "Results" tab to export and download the table as a .tsv (tab-delimited) file (see image below). Note that using BioMart will generate a large table with multiple transcripts per gene. The *buildref* function will choose the longest complete coding sequence per gene as the reference transcript. *buildref* currently also discards transcripts with ambiguous bases (e.g. "N"). However, if you are interested in particular transcripts, you can edit the table to contain only the transcript of interest per gene. If you would like *dNdScv* to use more than one transcript for genes that have very different alternative transcripts, such as the *CDKN2A* human gene, you can simply assign a different gene name for each transcript of interest (e.g. *CDKN2A-1*, *CDKN2A-2*). Also note that, for some species, the "Gene name" column may be sparse. If appropriate, users can modify the table to copy the "Gene stable ID" column in the "Gene name" column.  
+
+![ ](Ensembl_BioMart_screenshot2.png)
 
 Although the *buildref* function was originally designed to use BioMart output tables and fasta files of whole genome assemblies, you can use it in more flexible ways. For example, you could provide a fasta file with a CDS sequence per entry instead of full chromosomes, or you could annotate different protein domains under a different "gene name" to perform inferences of selection at a domain level. Just note that, since dNdScv uses substitution models in a trinucleotide context, buildref will need to access the base before and after each CDS in the input fasta file.
 
@@ -57,10 +61,16 @@ Although the *buildref* function was originally designed to use BioMart output t
 library(dndscv)
 path_cds_table = system.file("extdata", "BioMart_human_GRCh37_chr3_segment.txt", package = "dndscv", mustWork = TRUE)
 path_genome_fasta = system.file("extdata", "chr3_segment.fa", package = "dndscv", mustWork = TRUE)
-buildref(cdsfile=path_cds_table, genomefile=path_genome_fasta, outfile = "example_output_refcds.rda")
+buildref(cdsfile=path_cds_table, genomefile=path_genome_fasta, outfile = "example_output_refcds.rda", excludechrs="MT")
 ```
 
 The code above will generate a RefCDS object and save it as a file using the *outfile* file name. Some users may be interested in loading the object and examining its structure (```load("example_output_refcds.rda"); print(RefCDS[[1]])```). The RefCDS object is an array of lists with an entry per gene (or, strictly speaking, per unique gene name). It contains information on the sequence of the gene and a table (192 rows by 4 columns) with the precomputed impact of all possible coding mutations in the gene and their trinucleotide context.
+
+In the example above, I have used the optional argument `excludechrs` as a reminder that genes in the mitochondrial genome should be excluded. The reasons for this are that mitochondrial genes have a different genetic code and that the mitochondrial genome normally has very different mutation rates and requires a different substitution model. When using *buildref*, you should use the arguments "excludechrs" or "onlychrs" to exclude certain chromosomes or to restrict RefCDS to chromosomes of interest, respectively (e.g. including only chromosomes 1-22,X,Y for humans, excluding other contigs). If you are interested in running dN/dS analyses on the mitochondrial genome, you can use buildref to create a separate RefCDS object for the mitochondria. Just remember that when building a RefCDS for genomes with a non-standard genetic code, you need to inform *buildref* and *dndscv* about the genetic code of your genome using the argument `numcode` in both functions. To see the list of genetic codes supported use:
+
+```{r warning=FALSE}
+? seqinr::translate
+```
 
 ###Running dNdScv with a new RefCDS object
 
@@ -78,7 +88,7 @@ print(dndsout$sel_cv) # This is shown as an example but these results based on a
 
 ###Running *dNdScv* with and without covariates
 
-Using *cv=NULL* we are telling *dndscv* not to use the default covariates provided with the package. As explained in the original publication (Martincorena *et al.*, 2017), *dNdScv* can use covariates to reduce the uncertainty in the variation of the mutation rate across genes. Covariates can improve the performance of the model by increasing its sensitivity and specificity, although their impact can be small. 
+Using `cv=NULL` we are telling *dndscv* not to use the default covariates provided with the package. As explained in the original publication (Martincorena *et al.*, 2017), *dNdScv* can use covariates to reduce the uncertainty in the variation of the mutation rate across genes. Covariates can improve the performance of the model by increasing its sensitivity and specificity, although their impact can be small. 
 
 You can see the impact of covariates in the example dataset provided using the code below. Note that we are now using the default RefCDS and running this analysis considering all genes in the genome:
 

@@ -296,6 +296,7 @@ print(signif_genes)</code></pre>
 ## 16           FBXW7 3.083308e-02
 ## 17            EGFR 4.784963e-02</code></pre>
 <p>Note in the table that the dN/dS ratios of significant cancer genes are typically extremely high, often &gt;10 or even &gt;100. This contains information about the fraction of mutations observed in a gene that are genuine drivers under positive selection. For example, for a highly significant gene, a dN/dS of 10 indicates that there are 10 times more non-synonymous mutations in the gene than neutrally expected, suggesting that at least around 90% of these mutations are genuine drivers (Greenman <em>et al</em>, 2006; Martincorena <em>et al</em>, 2017).</p>
+<p>Users can calculate confidence intervals for the dN/dS ratios per gene using the <em>geneci</em> function in the package. To use this function you need to run <em>dndscv</em> with the optional argument <code>outmats=T</code> and then use <code>ci = geneci(dndsout)</code>. For more details see <code>? geneci</code>.</p>
 </div>
 <div id="dndscv-outputs-global-dnds-estimates" class="section level5">
 <h5>dndscv outputs: Global dN/dS estimates</h5>

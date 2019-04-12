@@ -78,6 +78,11 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     Lcum = array(cumsum(L), dim=dim(L)) # Cumulative L indicating the position to place a given mutation in the nvec following rvec
     synsites$vecindex = apply(as.matrix(synsites[,c("trindex","geneindex")]), 1, function(x) Lcum[x[1], x[2]]) # Index for the mutation
     synsites = synsites[order(synsites$vecindex), ] # Sorting by index in the nvec
+
+    # Stop execution with an error if there are no synonymous mutations
+    if (nrow(synsites)==0) {
+        stop("No synonymous mutations found in the input. sitednds cannot be run without synonymous mutations.")
+    }
     
     # Correcting the index when there are multiple synonymous mutations in the same gene and trinucleotide class
     s = synsites$vecindex
@@ -132,13 +137,20 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     } else { # Conservative
         theta = theta_ci95[1]
     }
-    
-    recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
-    recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
-    recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
-    recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(L))
-    rownames(recursites) = NULL
     thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
+    
+    if (any(mutsites$freq>=min_recurr)==T) {
+        
+        recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
+        recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
+        recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
+        recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(L))
+        rownames(recursites) = NULL
+        
+    } else {
+        recursites = NULL
+        warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
+    }
     
     return(list(recursites=recursites, theta=thetaout))
 

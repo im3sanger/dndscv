@@ -19,10 +19,12 @@ buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, ex
     ## 1. Valid chromosomes and reference CDS per gene
     message("[1/3] Preparing the environment...")
     
-    reftable = read.table(cdsfile, header=1, sep="\t", stringsAsFactors=F)
+    reftable = read.table(cdsfile, header=1, sep="\t", stringsAsFactors=F, quote="\"", na.strings="-", fill=TRUE) # Loading the reference table
     colnames(reftable) = c("gene.id","gene.name","cds.id","chr","chr.coding.start","chr.coding.end","cds.start","cds.end","length","strand")
     
-    validchrs = sapply(strsplit(system(sprintf("grep '^>' %s", genomefile), intern=T), split=" "), function(x) substr(x[1],2,nchar(x[1])))
+    # Reading chromosome names in the fasta file using its index file if it already exists or creating it if it does not exist. The index file is also used by scanFa later.
+    validchrs = as.character(GenomicRanges::seqnames(Rsamtools::scanFaIndex(genomefile)))
+
     validchrs = setdiff(validchrs, excludechrs)
     if (length(onlychrs)>0) {
         validchrs = validchrs[validchrs %in% onlychrs]
@@ -39,16 +41,45 @@ buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, ex
         }
     }
 
-    # Selecting the longest complete CDS for every gene (required when there are multiple alternative transcripts per unique gene name)
+    
+    # Removing genes that fall partially or completely outside of the available chromosomes/contigs
     
     reftable = reftable[reftable[,1]!="" & reftable[,2]!="" & reftable[,3]!="" & !is.na(reftable[,5]) & !is.na(reftable[,6]),] # Removing invalid entries
     reftable = reftable[which(reftable$chr %in% validchrs),] # Only valid chromosomes
     
+    transc_gr = GenomicRanges::GRanges(reftable$chr, IRanges::IRanges(reftable$chr.coding.start,reftable$chr.coding.end))
+    chrs_gr = Rsamtools::scanFaIndex(genomefile)
+    ol = as.data.frame(GenomicRanges::findOverlaps(transc_gr, chrs_gr, type="within", select="all"))
+    reftable = reftable[unique(ol[,1]),] 
+    
+    # Identifying genes starting or ending at the ends of a chromosome/contig
+    # Because buildref and dndscv need to access the base before and after each coding position, genes overlapping the ends
+    # of a contig will be trimmed by three bases and a warning will be issued listing those genes.
+    
+    fullcds = intersect(reftable$cds.id[reftable$cds.start==1], reftable$cds.id[reftable$cds.end==reftable$length]) # List of complete CDS
+    
+    ol_start = as.data.frame(GenomicRanges::findOverlaps(transc_gr, chrs_gr, type="start", select="all"))[,1] # Genes overlapping contig starts
+    if (any(ol_start)) {
+        reftable[ol_start,"chr.coding.start"] = reftable[ol_start,"chr.coding.start"] + 3 # Truncate the first 3 bases
+        reftable[ol_start,"cds.start"] = reftable[ol_start,"cds.start"] + 3 # Truncate the first 3 bases
+    }
+
+    ol_end = as.data.frame(GenomicRanges::findOverlaps(transc_gr, chrs_gr, type="end", select="all"))[,1] # Genes overlapping contig starts
+    if (any(ol_end)) {
+        reftable[ol_end,"chr.coding.end"] = reftable[ol_end,"chr.coding.end"] - 3 # Truncate the first 3 bases
+        reftable[ol_end,"cds.end"] = reftable[ol_end,"cds.end"] - 3 # Truncate the first 3 bases
+    }
+
+    if (any(c(ol_start,ol_end))) {
+        warning(sprintf("The following genes were found to start or end at the first or last base of their contig. Since dndscv needs trinucleotide contexts for all coding bases, codons overlapping ends of contigs have been trimmed. Affected genes: %s.", paste(reftable[unique(c(ol_start,ol_end)),"gene.name"], collapse=", ")))
+    }
+    
+    
+    # Selecting the longest complete CDS for every gene (required when there are multiple alternative transcripts per unique gene name)
+    
     cds_table = unique(reftable[,c(1:3,9)])
     cds_table = cds_table[order(cds_table$gene.name, -cds_table$length), ] # Sorting CDS from longest to shortest
     cds_table = cds_table[(cds_table$length %% 3)==0, ] # Removing CDS of length not multiple of 3
-    fullcds = intersect(reftable$cds.id[reftable$cds.start==1], reftable$cds.id[reftable$cds.end==reftable$length]) # List of complete CDS
-    
     cds_table = cds_table[cds_table$cds.id %in% fullcds, ] # Complete CDS
     reftable = reftable[reftable$cds.id %in% fullcds, ] # Complete CDS
     gene_list = unique(cds_table$gene.name)

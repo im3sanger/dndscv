@@ -43,7 +43,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     message("[1] Loading the environment...")
 
     mutations = mutations[,1:5] # Restricting input matrix to first 5 columns
-    mutations[,c(1,2,4,5)] = lapply(mutations[,c(1,2,4,5)], as.character) # Factors to character
+    mutations[,c(1,2,3,4,5)] = lapply(mutations[,c(1,2,3,4,5)], as.character) # Factors to character
     mutations[[3]] = as.numeric(mutations[[3]]) # Chromosome position as numeric
     mutations = mutations[mutations[,4]!=mutations[,5],] # Removing mutations with identical reference and mutant base
     colnames(mutations) = c("sampleID","chr","pos","ref","mut")
@@ -144,7 +144,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     # Mapping mutations to genes
     gr_muts = GenomicRanges::GRanges(mutations$chr, IRanges::IRanges(mutations$start,mutations$end))
-    ol = as.matrix(GenomicRanges::findOverlaps(gr_muts, gr_genes, type="any", select="all"))
+    ol = as.data.frame(GenomicRanges::findOverlaps(gr_muts, gr_genes, type="any", select="all"))
     mutations = mutations[ol[,1],] # Duplicating subs if they hit more than one gene
     mutations$geneind = gr_genes_ind[ol[,2]]
     mutations$gene = sapply(RefCDS,function(x) x$gene_name)[mutations$geneind]
