@@ -154,7 +154,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     nsampl = sort(table(mutations$sampleID))
     exclsamples = NULL
     if (any(nsampl>max_coding_muts_per_sample)) {
-        message(sprintf('    Note: %0.0f samples excluded for exceeding the limit of mutations per sample',sum(nsampl>max_coding_muts_per_sample)))
+        message(sprintf('    Note: %0.0f samples excluded for exceeding the limit of mutations per sample (max_coding_muts_per_sample argument). %0.0f samples left after filtering.',sum(nsampl>max_coding_muts_per_sample),sum(nsampl<=max_coding_muts_per_sample)))
         exclsamples = names(nsampl[nsampl>max_coding_muts_per_sample])
         mutations = mutations[!(mutations$sampleID %in% names(nsampl[nsampl>max_coding_muts_per_sample])),]
     }
