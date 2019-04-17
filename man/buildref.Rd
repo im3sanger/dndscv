@@ -5,7 +5,7 @@
 \title{Generate a RefCDS object}
 \usage{
 buildref(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1,
-  excludechrs = NULL, onlychrs = NULL)
+  excludechrs = NULL, onlychrs = NULL, useids = F)
 }
 \arguments{
 \item{cdsfile}{Path to the reference transcript table.}
@@ -19,6 +19,8 @@ buildref(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1,
 \item{excludechrs}{Vector or string with chromosome names to be excluded from the RefCDS object (default: no chromosome will be excluded). The mitochondrial chromosome should be excluded as it has different genetic code and mutation rates, either using the excludechrs argument or not including mitochondrial transcripts in cdsfile.}
 
 \item{onlychrs}{Vector of valid chromosome names (default: all chromosomes will be included)}
+
+\item{useids}{Combine gene IDs and gene names (columns 1 and 2 of the input table) as long gene names (default = F)}
 }
 \description{
 Function to build a RefCDS object from a reference genome and a table of transcripts. The RefCDS object has to be precomputed for any new species or assembly prior to running dndscv. This function generates an .rda file that needs to be input into dndscv using the refdb argument. Note that when multiple CDS share the same gene name (second column of cdsfile), the longest coding CDS will be chosen for the gene. CDS with ambiguous bases (N) will not be considered.

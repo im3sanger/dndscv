@@ -11,16 +11,27 @@
 #' @param numcode NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate
 #' @param excludechrs Vector or string with chromosome names to be excluded from the RefCDS object (default: no chromosome will be excluded). The mitochondrial chromosome should be excluded as it has different genetic code and mutation rates, either using the excludechrs argument or not including mitochondrial transcripts in cdsfile.
 #' @param onlychrs Vector of valid chromosome names (default: all chromosomes will be included)
+#' @param useids Combine gene IDs and gene names (columns 1 and 2 of the input table) as long gene names (default = F)
 #' 
 #' @export
 
-buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, excludechrs = NULL, onlychrs = NULL) {
+buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, excludechrs = NULL, onlychrs = NULL, useids = F) {
     
     ## 1. Valid chromosomes and reference CDS per gene
     message("[1/3] Preparing the environment...")
     
     reftable = read.table(cdsfile, header=1, sep="\t", stringsAsFactors=F, quote="\"", na.strings="-", fill=TRUE) # Loading the reference table
     colnames(reftable) = c("gene.id","gene.name","cds.id","chr","chr.coding.start","chr.coding.end","cds.start","cds.end","length","strand")
+    reftable[,5:10] = suppressWarnings(lapply(reftable[,5:10], as.numeric)) # Convert to numeric
+    
+    # Checking for systematic absence of gene names (it happens in some BioMart inputs)
+    longname = paste(reftable$gene.id, reftable$gene.name, sep=":") # Gene name combining the Gene stable ID and the Associated gene name
+    if (useids==T) {
+        reftable$gene.name = longname # Replacing gene names by a concatenation of gene ID and gene name
+    }
+    if (length(unique(reftable$gene.name))<length(unique(longname))) {
+        warning(sprintf("%0.0f unique gene IDs (column 1) found. %0.0f unique gene names (column 2) found. Consider combining gene names and gene IDs or replacing gene names by gene IDs to avoid losing genes (see useids argument in ? buildref)",length(unique(reftable$gene.id)),length(unique(reftable$gene.name))))
+    }
     
     # Reading chromosome names in the fasta file using its index file if it already exists or creating it if it does not exist. The index file is also used by scanFa later.
     validchrs = as.character(GenomicRanges::seqnames(Rsamtools::scanFaIndex(genomefile)))
