@@ -61,6 +61,12 @@ buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, ex
     transc_gr = GenomicRanges::GRanges(reftable$chr, IRanges::IRanges(reftable$chr.coding.start,reftable$chr.coding.end))
     chrs_gr = Rsamtools::scanFaIndex(genomefile)
     ol = as.data.frame(GenomicRanges::findOverlaps(transc_gr, chrs_gr, type="within", select="all"))
+    
+    # Issuing an error if any transcript falls outside of the limits of a chromosome. Possibly due to a mismatch between the assembly used for the reference table and the reference genome.
+    if (length(unique(ol[,1])) < nrow(reftable)) {
+        stop(sprintf("Aborting buildref. %0.0f rows in cdsfile have coordinates that fall outside of the corresponding chromosome length. Please ensure that you are using the same assembly for the cdsfile and genomefile",nrow(reftable)-length(unique(ol[,1]))))
+    }
+    
     reftable = reftable[unique(ol[,1]),] 
     
     # Identifying genes starting or ending at the ends of a chromosome/contig
