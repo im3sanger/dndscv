@@ -38,6 +38,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
         dndsout$genemuts = dndsout$genemuts[which(g %in% gene_list), ]
         N = N[,which(g %in% gene_list)]
         L = L[,which(g %in% gene_list)]
+        dndsout$N = dndsout$N[,,which(g %in% gene_list)]
+        dndsout$L = dndsout$L[,,which(g %in% gene_list)]
     }
     
     # Counts of observed mutations
@@ -144,7 +146,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
         recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
         recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
         recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
-        recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(L))
+        recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
         rownames(recursites) = NULL
         
     } else {
