@@ -59,8 +59,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     sm = sm*sm["t"] # Absolute rates
     sm = sm[setdiff(names(sm),c("wmis","wnon","wspl","t"))] # Removing selection parameters
     sm = sm[order(names(sm))] # Sorting
-    mat_trisub = array(sm, dim=c(192,ncol(L))) # Relative mutation rates by trinucleotide
-    mat_relmr = t(array(relmr, dim=c(ncol(L),192))) # Relative mutation rates by gene
+    mat_trisub = array(sm, dim=c(192,sum(g %in% gene_list))) # Relative mutation rates by trinucleotide
+    mat_relmr = t(array(relmr, dim=c(sum(g %in% gene_list),192))) # Relative mutation rates by gene
     R = mat_trisub * mat_relmr # Expected rate for each mutation type in each gene
     
     # Expanded vectors: full vectors of observed and expected mutations per site across all sites considered in dndsout

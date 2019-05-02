@@ -65,7 +65,7 @@ signifsites = hotspots$recursites[hotspots$recursites$qval<0.05, ]
 print(signifsites[,c("gene","aachange","impact","freq","dnds","qval")], digits=5)
 ```
 
-Careful examination of the significant hotspots reveals many well-known cancer-driver hotspots, including in *FGFR3* (e.g. S249, Y375, G372, K652), *TP53* (e.g. R248), *PIK3CA* (e.g. E542, H1047), *HRAS* (Q61, G13), *KRAS* (G12), *ERBB2* (S310), *ERBB3* (V104), *SF3B1* (E902), etc. Note that the exact aminoacid position affected depends on the exact protein isoform used for annotation (see Ensembl protein IDs in *dndsout$annotmuts*).
+Careful examination of the significant hotspots reveals many well-known cancer-driver hotspots, including in *FGFR3* (e.g. S249, Y375, G372), *TP53* (e.g. R248), *PIK3CA* (e.g. E542, H1047), *HRAS* (Q61), *KRAS* (G12), *ERBB2* (S310), *ERBB3* (V104), etc. Note that the exact aminoacid position affected depends on the exact protein isoform used for annotation (see Ensembl protein IDs in *dndsout$annotmuts*).
 
 However, the table of significant hotspots also contains a considerable number of likely false positives, including multiple synonymous sites in *MLLT3*. A proper analysis of these data would require careful reevaluation and improvement of the mutation calls, before repeating this analysis. Significant improvements to somatic mutation calls against recurrent artefacts can be achieved by using an unmatched normal panel and by more stringent filtering of germline SNP contamination. 
 
