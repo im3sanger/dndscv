@@ -102,9 +102,9 @@ signifsites = hotspots$recursites[hotspots$recursites$qval<0.05, ]
 head(signifsites[,c("gene","aachange","impact","freq","dnds","qval")], 30)
 ```
 
-Remarkably, owing to the very large number of mutant clones identified in this study, this analysis finds a large number of statistically-significant sites. Reassuringly, they are all in genes detected under positive selection in the original publication (Martincorena *et al*, 2018). Among other sites this includes 95 sites in *NOTCH1*, 31 sites in *TP53* and the well-known *PIK3CA* hotspot H1047R.
+Remarkably, owing to the very large number of mutant clones identified in this study, this analysis finds a large number of statistically-significant sites (n=81 for qval<0.05). Reassuringly, they are all in genes detected under positive selection in the original publication (Martincorena *et al*, 2018). This comprises 61 sites in *NOTCH1*, 17 sites in *TP53*, the well-known *PIK3CA* hotspot H1047R and one site in FAT1 and TP63.
 
-This analysis also identifies a known driver hotspot in a synonymous site of *TP53* (T125T), which is known to affect splicing of *TP53*. Intriguingly, it also identifies a synonymous site in *NOTCH1*, which deserves careful follow-up analysis. Apart from these two synonymous sites, all other 131 significant hotspots are non-synonymous.
+This analysis also identifies a known driver hotspot in a synonymous site of *TP53* (T125T), which is known to affect splicing of *TP53*. Intriguingly, it also identifies a synonymous site in *NOTCH1* (V717V), which deserves careful follow-up analysis. Apart from these two synonymous sites, all other 79 significant hotspots are non-synonymous.
 
 
 ###References
