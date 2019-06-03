@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildref.R
 \name{buildref}
 \alias{buildref}
-\title{Generate a RefCDS object}
+\title{buildref}
 \usage{
 buildref(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1,
   excludechrs = NULL, onlychrs = NULL, useids = F)

@@ -25,7 +25,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     N = as.matrix(dndsout$N[,1,]) # We use as.matrix to handle gene_list of length 1
     L = as.matrix(dndsout$L[,1,]) # We use as.matrix to handle gene_list of length 1
     if (length(N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
-    if (nrow(dndsout$mle_submodel)!=195) { stop(sprintf("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv."))}
+    if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
     
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
