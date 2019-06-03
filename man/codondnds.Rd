@@ -25,6 +25,8 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
 
+- recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
+
 - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 }
 \description{
