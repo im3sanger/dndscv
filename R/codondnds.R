@@ -13,6 +13,7 @@
 #'
 #' @return 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
 #' @return - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
+#' @return - recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
 #' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 #' 
 #' @export
@@ -136,6 +137,13 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     freqs = sort(table(annotsubs$codonsub), decreasing=T)
     freqs = freqs[freqs>=min_recurr]
     
+    if (theta_option=="mle") {
+        theta = theta_ml
+    } else { # Conservative
+        theta = theta_ci95[1]
+    }
+    thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
+    
     if (length(freqs)>1) {
     
         recurcodons = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
@@ -150,24 +158,33 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
             recurcodons$mu[j] = refcds[[geneind[recurcodons$gene[j]]]]$codon_rvec_ns[codonnumeric[j]] # Background non-synonymous rate for this codon
         }
         
-        if (theta_option=="mle") {
-            theta = theta_ml
-        } else { # Conservative
-            theta = theta_ci95[1]
-        }
-        thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
-        
         recurcodons$dnds = recurcodons$freq / recurcodons$mu # Codon-wise dN/dS (point estimate)
         recurcodons$pval = pnbinom(q=recurcodons$freq-0.5, mu=recurcodons$mu, size=theta, lower.tail=F)
         recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
         recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=numcodons) # P-value adjustment for all possible changes
         rownames(recurcodons) = NULL
         
+        # Additional annotation
+        annotsubs$mutaa = substr(annotsubs$aachange,nchar(annotsubs$aachange),nchar(annotsubs$aachange))
+        annotsubs$simplent = paste(annotsubs$ref,annotsubs$mut,sep=">")
+        annotsubs$mutnt = paste(annotsubs$chr,annotsubs$pos,annotsubs$simplent,annotsubs$mutaa,sep="_")
+        aux = split(annotsubs, f=annotsubs$codonsub)
+        recurcodons_ext = recurcodons
+        recurcodons_ext$codonsub = paste(recurcodons_ext$chr,recurcodons_ext$gene,recurcodons_ext$codon,sep=":")
+        recurcodons_ext$mutnt = recurcodons_ext$mutaa = NA
+        for (j in 1:nrow(recurcodons_ext)) {
+            x = aux[[recurcodons_ext$codonsub[j]]]
+            f = sort(table(x$mutaa),decreasing=T)
+            recurcodons_ext$mutaa[j] = paste(names(f),f,sep=":",collapse="|")
+            f = sort(table(x$mutnt),decreasing=T)
+            recurcodons_ext$mutnt[j] = paste(names(f),f,sep=":",collapse="|")
+        }
+        
     } else {
-        recurcodons = NULL
+        recurcodons = recurcodons_ext = NULL
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recurcodons=recurcodons, theta=thetaout))
+    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, theta=thetaout))
 
 }
