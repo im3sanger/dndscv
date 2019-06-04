@@ -12,7 +12,7 @@ buildcodon(refcds, numcode = 1)
 \item{numcode}{NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate}
 }
 \description{
-Function to build a refcodon object from a RefCDS object. This function takes a RefCDS object as input and adds to it two fields required to run the codondnds function. Recommended usage: RefCDS = buildcodon(RefCDS)
+This function takes a RefCDS object as input and adds to it two fields required to run the codondnds function. Usage: RefCDS = buildcodon(RefCDS)
 }
 \details{
 Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.

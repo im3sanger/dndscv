@@ -1,6 +1,6 @@
 #' buildcodon
 #' 
-#' Function to build a refcodon object from a RefCDS object. This function takes a RefCDS object as input and adds to it two fields required to run the codondnds function. Recommended usage: RefCDS = buildcodon(RefCDS)
+#' This function takes a RefCDS object as input and adds to it two fields required to run the codondnds function. Usage: RefCDS = buildcodon(RefCDS)
 #' 
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
@@ -41,8 +41,7 @@ buildcodon = function(refcds, numcode = 1) {
         }
     }
         
-    # Initialising and populating the Refcodon object
-    refcodon = array(list(NULL), length(refcds)) # Initialising empty object
+    # Adding two new fields to refcds containing the full vector of all site changes listing the rate parameters and aminoacid impact
 
     for (j in 1:length(refcds)) {
         
