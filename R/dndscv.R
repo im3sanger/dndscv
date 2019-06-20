@@ -172,7 +172,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     
     mutations$strand = sapply(RefCDS,function(x) x$strand)[mutations$geneind]
     snv = (mutations$ref %in% nt & mutations$mut %in% nt)
-    if (!any(snv)) { stop("Zero coding substitutions found in this dataset. Unable to run dndscv.") }
+    if (!any(snv)) { stop("Zero coding substitutions found in this dataset. Unable to run dndscv. Common causes for this error are inputting only indels or using chromosome names different to those in the reference database (e.g. chr1 vs 1)") }
     indels = mutations[!snv,]
     mutations = mutations[snv,]
     mutations$ref_cod = mutations$ref
@@ -346,7 +346,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     s1 = gsub("wmis","wall",gsub("wnon","wall",gsub("wspl","wall",substmodel)))
     par1 = fit_substmodel(N, L, s1)$par # Substitution model with 1 selection parameter
     s2 = gsub("wnon","wtru",gsub("wspl","wtru",substmodel))
-    par2 = fit_substmodel(N, L, s2)$par # Substitution model with 1 selection parameter
+    par2 = fit_substmodel(N, L, s2)$par # Substitution model with 2 selection parameter
     globaldnds = rbind(par, par1, par2)[c("wmis","wnon","wspl","wtru","wall"),]
     sel_loc = sel_cv = NULL
     
