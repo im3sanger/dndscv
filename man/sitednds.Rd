@@ -4,8 +4,9 @@
 \alias{sitednds}
 \title{sitednds}
 \usage{
-sitednds(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "mle",
-  syn_drivers = "TP53:T125T")
+sitednds(dndsout, min_recurr = 2, gene_list = NULL,
+  theta_option = "conservative", syn_drivers = "TP53:T125T",
+  method = "NB", numbins = 10000)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.}
@@ -14,9 +15,13 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "mle",
 
 \item{gene_list}{List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]}
 
-\item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
+\item{theta_option}{2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]}
 
 \item{syn_drivers}{Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).}
+
+\item{method}{Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]}
+
+\item{numbins}{Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.}
 }
 \value{
 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:

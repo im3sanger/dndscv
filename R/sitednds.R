@@ -7,8 +7,10 @@
 #' @param dndsout Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.
 #' @param min_recurr Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]
-#' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
+#' @param theta_option 2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
+#' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
+#' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
 #'
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
@@ -16,10 +18,10 @@
 #' 
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T") {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
-    message("[1] Site-wise negative binomial model accounting for trinucleotides and relative gene mutability...")
+    message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
     
     # N and L matrices for synonymous mutations
     N = as.matrix(dndsout$N[,1,]) # We use as.matrix to handle gene_list of length 1
@@ -98,34 +100,38 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
     rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical
     
-    # Estimation of overdispersion modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma) 
-    # Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
-    nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
-    ml = optimize(nbin, interval=c(0,1000))
-    theta_ml = ml$minimum
-    
-    
-    # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
-    
-    grid_proflik = function(bins=5, iter=5) {
-        for (j in 1:iter) {
-            if (j==1) {
-                thetavec = sort(c(0, 10^seq(-3,3,length.out=bins), theta_ml, theta_ml*10, 1e4)) # Initial vals
-            } else {
-                thetavec = sort(c(seq(thetavec[ind[1]], thetavec[ind[1]+1], length.out=bins), seq(thetavec[ind[2]-1], thetavec[ind[2]], length.out=bins))) # Refining previous iteration
+    # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
+    if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+        
+        lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
+        theta_ml = lnp_est$ml$minimum
+        theta_ci95 = lnp_est$sig_ci95
+        
+    } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
+        
+        nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
+        ml = optimize(nbin, interval=c(0,1000))
+        theta_ml = ml$minimum
+        
+        # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
+        grid_proflik = function(bins=5, iter=5) {
+            for (j in 1:iter) {
+                if (j==1) {
+                    thetavec = sort(c(0, 10^seq(-3,3,length.out=bins), theta_ml, theta_ml*10, 1e4)) # Initial vals
+                } else {
+                    thetavec = sort(c(seq(thetavec[ind[1]], thetavec[ind[1]+1], length.out=bins), seq(thetavec[ind[2]-1], thetavec[ind[2]], length.out=bins))) # Refining previous iteration
+                }
+                
+                proflik = sapply(thetavec, function(theta) -sum(dnbinom(x=nvec, mu=rvec, size=theta, log=T))-ml$objective) < qchisq(.95,1)/2 # Values of theta within CI95%
+                ind = c(which(proflik[1:(length(proflik)-1)]==F & proflik[2:length(proflik)]==T)[1],
+                        which(proflik[1:(length(proflik)-1)]==T & proflik[2:length(proflik)]==F)[1]+1)
+                if (is.na(ind[1])) { ind[1] = 1 }
+                if (is.na(ind[2])) { ind[2] = length(thetavec) }
             }
-            
-            proflik = sapply(thetavec, function(theta) -sum(dnbinom(x=nvec, mu=rvec, size=theta, log=T))-ml$objective) < qchisq(.95,1)/2 # Values of theta within CI95%
-            ind = c(which(proflik[1:(length(proflik)-1)]==F & proflik[2:length(proflik)]==T)[1],
-                    which(proflik[1:(length(proflik)-1)]==T & proflik[2:length(proflik)]==F)[1]+1)
-            if (is.na(ind[1])) { ind[1] = 1 }
-            if (is.na(ind[2])) { ind[2] = length(thetavec) }
+            return(thetavec[ind])
         }
-        return(thetavec[ind])
+        theta_ci95 = grid_proflik(bins=5, iter=5)
     }
-    
-    theta_ci95 = grid_proflik(bins=5, iter=5)
-    
     
     
     ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites (P-values are based on the Gamma assumption underlying the negative binomial modelling)
@@ -139,21 +145,49 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "m
     } else { # Conservative
         theta = theta_ci95[1]
     }
-    thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
     
     if (any(mutsites$freq>=min_recurr)==T) {
         
         recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
-        recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
-        recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
-        recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
-        rownames(recursites) = NULL
+        
+        if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+
+            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
+            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
+
+            # Cumulative Lognormal-Poisson using poilog::dpoilog
+            dpoilog = poilog::dpoilog
+            ppoilog = function(n, mu, sig) {
+                p = sum(dpoilog(n=floor(n+1):floor(n*10+1000), mu=log(mu)-sig^2/2, sig=sig))
+                return(p)
+            }
+            
+            recursites$pval = apply(recursites, 1, function(x) ppoilog(n=as.numeric(x["freq"])-0.5, mu=as.numeric(x["mu"]), sig=theta))
+            recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
+            recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
+            rownames(recursites) = NULL
+            
+        } else { # Negative binomial model
+            
+            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
+            message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
+            
+            recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
+            recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
+            recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
+            rownames(recursites) = NULL
+            
+        }
         
     } else {
-        recursites = NULL
+        recursites = thetaout = NULL
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recursites=recursites, theta=thetaout))
+    if (method=="LNP") {
+        return(list(recursites=recursites, theta=thetaout, lnp_est=lnp_est))
+    } else {
+        return(list(recursites=recursites, theta=thetaout))
+    }
 
 }
