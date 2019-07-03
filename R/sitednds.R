@@ -15,7 +15,9 @@
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
 #' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
-#' 
+#' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+#' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+#'
 #' @export
 
 sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
@@ -24,10 +26,10 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
     message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
     
     # N and L matrices for synonymous mutations
+    if (length(dndsout$N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
+    if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
     N = as.matrix(dndsout$N[,1,]) # We use as.matrix to handle gene_list of length 1
     L = as.matrix(dndsout$L[,1,]) # We use as.matrix to handle gene_list of length 1
-    if (length(N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
-    if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
     
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
@@ -140,9 +142,10 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
     recursites = mutsites[mutsites$freq>=min_recurr, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
     recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")]
     
-    if (theta_option=="mle") {
+    if (theta_option=="mle" | theta_option=="MLE") {
         theta = theta_ml
     } else { # Conservative
+        message("    Using the conservative bound of the confidence interval of the overdispersion parameter.")
         theta = theta_ci95[1]
     }
     
@@ -179,15 +182,26 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
             
         }
         
+        # Estimating False Positive Rates based on the observed number of significant synonymous hits
+        
+        qcutoff = 0.05 # q-value cutoff to estimate false positive rates
+        signifsites = recursites[recursites$qval<qcutoff, ]
+        obs_hits = c(sum(signifsites$impact=="Synonymous" & !(signifsites$gene %in% c("TP53","CDKN2A","CDKN2A.p14arf"))), sum(signifsites$impact!="Synonymous"))
+        exp_frac = c(sum(dndsout$genemuts$exp_syn), sum(dndsout$genemuts$exp_mis+dndsout$genemuts$exp_non+dndsout$genemuts$exp_spl))
+        obsexp = (obs_hits[2]/obs_hits[1])/(exp_frac[2]/exp_frac[1])
+        fpr_nonsyn = list()
+        fpr_nonsyn$estimate = 1 / pmax(1,obsexp) # i.e. 1 - driver_fraction
+        fpr_nonsyn$conf.int = rev(1 / pmax(1,as.vector(poisson.test(x=obs_hits[2:1], T=exp_frac[2:1])$conf.int)))	
+        
+        if (fpr_nonsyn$estimate>qcutoff) {
+            warning(sprintf("The estimated false positive rate for nonsynonymous hits (qval<0.05) is %0.3f (CI95:%0.3f,%0.3f). High false positive rates (>>0.05) evidence problems with the data or the model and mean that the results are not reliable.", fpr_nonsyn$estimate, fpr_nonsyn$conf.int[1], fpr_nonsyn$conf.int[2]))
+        }
+        
     } else {
-        recursites = thetaout = NULL
+        recursites = thetaout = fpr_nonsyn = lnp_est = NULL
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    if (method=="LNP") {
-        return(list(recursites=recursites, theta=thetaout, lnp_est=lnp_est))
-    } else {
-        return(list(recursites=recursites, theta=thetaout))
-    }
+    return(list(recursites=recursites, theta=thetaout, fpr_nonsyn_q05=fpr_nonsyn))
 
 }

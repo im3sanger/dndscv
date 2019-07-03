@@ -1,6 +1,6 @@
 #' codondnds
 #'
-#' Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
+#' Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
 #'
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' 
@@ -10,6 +10,8 @@
 #' @param gene_list List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, codondnds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
+#' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
+#' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
 #'
 #' @return 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
 #' @return - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
@@ -18,10 +20,10 @@
 #' 
 #' @export
 
-codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T") {
+codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
-    ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
-    message("[1] Codon-wise negative binomial model accounting for trinucleotides and relative gene mutability...")
+    ## 1. Fitting an overdispersed distribution at the codon level considering the background mutation rate of the gene and of each trinucleotide
+    message("[1] Codon-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
     
     if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
     if (is.null(refcds[[1]]$codon_impact)) { stop("Invalid input: the input RefCDS object must contain codon-level annotation. Use the buildcodon function to add this information.") }
@@ -99,32 +101,38 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     
     message("[2] Estimating overdispersion and calculating site-wise dN/dS ratios...")
     
-    # Estimation of overdispersion modelling rates per codon as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma) 
-    # Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
-    nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
-    ml = optimize(nbin, interval=c(0,1000))
-    theta_ml = ml$minimum
-    
-    # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
-    
-    grid_proflik = function(bins=5, iter=5) {
-        for (j in 1:iter) {
-            if (j==1) {
-                thetavec = sort(c(0, 10^seq(-3,3,length.out=bins), theta_ml, theta_ml*10, 1e4)) # Initial vals
-            } else {
-                thetavec = sort(c(seq(thetavec[ind[1]], thetavec[ind[1]+1], length.out=bins), seq(thetavec[ind[2]-1], thetavec[ind[2]], length.out=bins))) # Refining previous iteration
+    # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
+    if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+        
+        lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
+        theta_ml = lnp_est$ml$minimum
+        theta_ci95 = lnp_est$sig_ci95
+        
+    } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
+        
+        nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
+        ml = optimize(nbin, interval=c(0,1000))
+        theta_ml = ml$minimum
+        
+        # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
+        grid_proflik = function(bins=5, iter=5) {
+            for (j in 1:iter) {
+                if (j==1) {
+                    thetavec = sort(c(0, 10^seq(-3,3,length.out=bins), theta_ml, theta_ml*10, 1e4)) # Initial vals
+                } else {
+                    thetavec = sort(c(seq(thetavec[ind[1]], thetavec[ind[1]+1], length.out=bins), seq(thetavec[ind[2]-1], thetavec[ind[2]], length.out=bins))) # Refining previous iteration
+                }
+                
+                proflik = sapply(thetavec, function(theta) -sum(dnbinom(x=nvec, mu=rvec, size=theta, log=T))-ml$objective) < qchisq(.95,1)/2 # Values of theta within CI95%
+                ind = c(which(proflik[1:(length(proflik)-1)]==F & proflik[2:length(proflik)]==T)[1],
+                        which(proflik[1:(length(proflik)-1)]==T & proflik[2:length(proflik)]==F)[1]+1)
+                if (is.na(ind[1])) { ind[1] = 1 }
+                if (is.na(ind[2])) { ind[2] = length(thetavec) }
             }
-            
-            proflik = sapply(thetavec, function(theta) -sum(dnbinom(x=nvec, mu=rvec, size=theta, log=T))-ml$objective) < qchisq(.95,1)/2 # Values of theta within CI95%
-            ind = c(which(proflik[1:(length(proflik)-1)]==F & proflik[2:length(proflik)]==T)[1],
-                    which(proflik[1:(length(proflik)-1)]==T & proflik[2:length(proflik)]==F)[1]+1)
-            if (is.na(ind[1])) { ind[1] = 1 }
-            if (is.na(ind[2])) { ind[2] = length(thetavec) }
+            return(thetavec[ind])
         }
-        return(thetavec[ind])
+        theta_ci95 = grid_proflik(bins=5, iter=5)
     }
-    
-    theta_ci95 = grid_proflik(bins=5, iter=5)
     
     
     ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites (P-values are based on the Gamma assumption underlying the negative binomial modelling)
@@ -137,13 +145,13 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     freqs = sort(table(annotsubs$codonsub), decreasing=T)
     freqs = freqs[freqs>=min_recurr]
     
-    if (theta_option=="mle") {
+    if (theta_option=="mle" | theta_option=="MLE") {
         theta = theta_ml
     } else { # Conservative
+        message("    Using the conservative bound of the confidence interval of the overdispersion parameter.")
         theta = theta_ci95[1]
     }
-    thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
-    
+
     if (length(freqs)>1) {
     
         recurcodons = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
@@ -159,10 +167,35 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         }
         
         recurcodons$dnds = recurcodons$freq / recurcodons$mu # Codon-wise dN/dS (point estimate)
-        recurcodons$pval = pnbinom(q=recurcodons$freq-0.5, mu=recurcodons$mu, size=theta, lower.tail=F)
-        recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
-        recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=numcodons) # P-value adjustment for all possible changes
-        rownames(recurcodons) = NULL
+        
+        if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+            
+            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
+            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
+            
+            # Cumulative Lognormal-Poisson using poilog::dpoilog
+            dpoilog = poilog::dpoilog
+            ppoilog = function(n, mu, sig) {
+                p = sum(dpoilog(n=floor(n+1):floor(n*10+1000), mu=log(mu)-sig^2/2, sig=sig))
+                return(p)
+            }
+            
+            recurcodons$pval = apply(recurcodons, 1, function(x) ppoilog(n=as.numeric(x["freq"])-0.5, mu=as.numeric(x["mu"]), sig=theta))
+            recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
+            recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
+            rownames(recurcodons) = NULL
+            
+        } else { # Negative binomial model
+            
+            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
+            message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
+            
+            recurcodons$pval = pnbinom(q=recurcodons$freq-0.5, mu=recurcodons$mu, size=theta, lower.tail=F)
+            recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
+            recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=numcodons) # P-value adjustment for all possible changes
+            rownames(recurcodons) = NULL
+            
+        }
         
         # Additional annotation
         annotsubs$mutaa = substr(annotsubs$aachange,nchar(annotsubs$aachange),nchar(annotsubs$aachange))
@@ -181,10 +214,10 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         }
         
     } else {
-        recurcodons = recurcodons_ext = NULL
+        recurcodons = recurcodons_ext = thetaout = NULL
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
     return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, theta=thetaout))
-
+    
 }
