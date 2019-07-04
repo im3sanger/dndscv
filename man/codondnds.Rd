@@ -5,7 +5,8 @@
 \title{codondnds}
 \usage{
 codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
-  theta_option = "mle", syn_drivers = "TP53:T125T")
+  theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB",
+  numbins = 10000)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv.}
@@ -14,11 +15,15 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 \item{min_recurr}{Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]}
 
-\item{gene_list}{List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, codondnds will be run on all genes in dndsout]}
+\item{gene_list}{List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
 
 \item{syn_drivers}{Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).}
+
+\item{method}{Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]}
+
+\item{numbins}{Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.}
 }
 \value{
 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
@@ -30,7 +35,7 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 }
 \description{
-Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
+Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
 }
 \author{
 Inigo Martincorena (Wellcome Sanger Institute)

@@ -13,7 +13,7 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL,
 
 \item{min_recurr}{Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]}
 
-\item{gene_list}{List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]}
+\item{gene_list}{List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]}
 
@@ -29,6 +29,10 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL,
 - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
 
 - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
+
+- recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+
+- recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
 }
 \description{
 Function to estimate site-wise dN/dS values and p-values against neutrality. To generate a valid input object for this function, use outmats=T when running dndscv. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. A considerable number of significant synonymous sites may reflect a problem with the data. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel). In the future, this function may be extended to perform inferences at a codon level instead of at a single-base level.
