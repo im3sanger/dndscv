@@ -7,7 +7,7 @@
 #' @param dndsout Output object from dndscv.
 #' @param refcds RefCDS object annotated with codon-level information using the buildcodon function.
 #' @param min_recurr Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]
-#' @param gene_list List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, codondnds will be run on all genes in dndsout]
+#' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -35,9 +35,10 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         if (length(nonex)>0) {
             warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
         }
-        dndsout$annotmuts = dndsout$annotmuts[which(dndsout$annotmuts$gene %in% gene_list), ]
-        dndsout$genemuts = dndsout$genemuts[which(g %in% gene_list), ]
-        refcds = refcds[sapply(refcds, function(x) x$gene_name) %in% gene_list] # Only input genes
+        refaux = refcds[sapply(refcds, function(x) x$gene_name) %in% gene_list] # Only input genes
+        numtests = sum(sapply(refaux, function(x) x$CDS_length))/3 # Number of codons in genes listed in gene_list
+    } else {
+        numtests = sum(sapply(refcds, function(x) x$CDS_length))/3 # Number of codons in all genes
     }
     
     # Relative mutation rate per gene
@@ -54,12 +55,15 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     
     # Annotated mutations per gene
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact=="Synonymous"),]
+    if (nrow(annotsubs)<2) {
+        stop("Too few synonymous mutations found in the input. codondnds cannot run without synonymous mutations.")
+    }
     annotsubs = annotsubs[!(paste(annotsubs$gene,annotsubs$aachange,sep=":") %in% syn_drivers),]
     annotsubs$codon = as.numeric(substr(annotsubs$aachange,2,nchar(annotsubs$aachange)-1)) # Numeric codon position
     annotsubs = split(annotsubs, f=annotsubs$gene)
     
     # Calculating observed and expected mutation rates per codon for every gene
-    numcodons = sum(sapply(refcds, function(x) x$CDS_length))/3 # Number of codons in the genes of interest
+    numcodons = sum(sapply(refcds, function(x) x$CDS_length))/3 # Number of codons in all genes
     nvec = rvec = array(NA, numcodons)
     pos = 1
     
@@ -139,7 +143,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     }
     
     
-    ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites (P-values are based on the Gamma assumption underlying the negative binomial modelling)
+    ## 2. Calculating codon-wise dN/dS ratios and P-values for recurrently mutated codons
     
     # Counts of observed nonsynonymous mutations
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Missense","Nonsense")),]
@@ -173,7 +177,6 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         recurcodons$dnds = recurcodons$freq / recurcodons$mu # Codon-wise dN/dS (point estimate)
         
         if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
-            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
             
             # Cumulative Lognormal-Poisson using poilog::dpoilog
             dpoilog = poilog::dpoilog
@@ -182,20 +185,18 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
                 return(p)
             }
             
+            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
             recurcodons$pval = apply(recurcodons, 1, function(x) ppoilog(n=as.numeric(x["freq"])-0.5, mu=as.numeric(x["mu"]), sig=theta))
-            recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
-            recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
-            rownames(recurcodons) = NULL
             
         } else { # Negative binomial model
+            
             message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
-            
             recurcodons$pval = pnbinom(q=recurcodons$freq-0.5, mu=recurcodons$mu, size=theta, lower.tail=F)
-            recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
-            recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=numcodons) # P-value adjustment for all possible changes
-            rownames(recurcodons) = NULL
-            
         }
+        
+        recurcodons = recurcodons[order(recurcodons$pval, -recurcodons$freq), ] # Sorting by p-val and frequency
+        recurcodons$qval = p.adjust(recurcodons$pval, method="BH", n=numtests) # P-value adjustment for all possible changes
+        rownames(recurcodons) = NULL
         
         # Additional annotation
         annotsubs$mutaa = substr(annotsubs$aachange,nchar(annotsubs$aachange),nchar(annotsubs$aachange))
@@ -214,7 +215,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         }
         
     } else {
-        recurcodons = recurcodons_ext = LL = NULL
+        recurcodons = recurcodons_ext = NULL
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     

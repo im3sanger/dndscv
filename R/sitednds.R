@@ -6,7 +6,7 @@
 #' 
 #' @param dndsout Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.
 #' @param min_recurr Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]
-#' @param gene_list List of genes to restrict the analysis (only needed if the user wants to restrict the analysis to a subset of the genes in dndsout) [default=NULL, sitednds will be run on all genes in dndsout]
+#' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -38,14 +38,11 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         if (length(nonex)>0) {
             warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
         }
-        dndsout$annotmuts = dndsout$annotmuts[which(dndsout$annotmuts$gene %in% gene_list), ]
-        dndsout$genemuts = dndsout$genemuts[which(g %in% gene_list), ]
-        N = as.matrix(N[,which(g %in% gene_list)]) # We use as.matrix to handle gene_list of length 1
-        L = as.matrix(L[,which(g %in% gene_list)]) # We use as.matrix to handle gene_list of length 1
-        dndsout$N = dndsout$N[,,which(g %in% gene_list)]
-        dndsout$L = dndsout$L[,,which(g %in% gene_list)]
+        numtests = sum(dndsout$L[,,which(g %in% gene_list)])
+    } else {
+        numtests = sum(dndsout$L)
     }
-    
+
     # Counts of observed mutations
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$ref,annotsubs$mut,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
@@ -86,8 +83,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
     synsites = synsites[order(synsites$vecindex), ] # Sorting by index in the nvec
 
     # Stop execution with an error if there are no synonymous mutations
-    if (nrow(synsites)==0) {
-        stop("No synonymous mutations found in the input. sitednds cannot be run without synonymous mutations.")
+    if (nrow(synsites)<2) {
+        stop("Too few synonymous mutations found in the input. sitednds cannot run without synonymous mutations.")
     }
     
     # Correcting the index when there are multiple synonymous mutations in the same gene and trinucleotide class
@@ -140,7 +137,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
     }
     
     
-    ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites (P-values are based on the Gamma assumption underlying the negative binomial modelling)
+    ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites
     message("[2] Calculating site-wise dN/dS ratios and p-values...")
     
     recursites = mutsites[mutsites$freq>=min_recurr, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
@@ -153,13 +150,14 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         theta = theta_ci95[1]
     }
     
+    recursites = recursites[which(recursites$gene %in% gene_list), ] # Restricting the p-value and q-value calculations to gene_list
+    
     if (any(mutsites$freq>=min_recurr)==T) {
         
         recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
         
         if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
-            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
-
+            
             # Cumulative Lognormal-Poisson using poilog::dpoilog
             dpoilog = poilog::dpoilog
             ppoilog = function(n, mu, sig) {
@@ -167,20 +165,18 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
                 return(p)
             }
             
+            message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
             recursites$pval = apply(recursites, 1, function(x) ppoilog(n=as.numeric(x["freq"])-0.5, mu=as.numeric(x["mu"]), sig=theta))
-            recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
-            recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
-            rownames(recursites) = NULL
-            
+
         } else { # Negative binomial model
+            
             message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
-            
             recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
-            recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
-            recursites$qval = p.adjust(recursites$pval, method="BH", n=sum(dndsout$L)) # P-value adjustment for all possible changes
-            rownames(recursites) = NULL
-            
         }
+        
+        recursites = recursites[order(recursites$pval, -recursites$freq), ] # Sorting by p-val and frequency
+        recursites$qval = p.adjust(recursites$pval, method="BH", n=numtests) # P-value adjustment for all possible changes
+        rownames(recursites) = NULL
         
         # Estimating False Positive Rates based on the observed number of significant synonymous hits
         
@@ -204,7 +200,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         }
         
     } else {
-        recursites = fpr_nonsyn = lnp_est = LL = NULL
+        recursites = fpr_nonsyn = lnp_est = NULL
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     

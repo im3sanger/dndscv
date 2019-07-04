@@ -11,11 +11,13 @@
 #' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
 #'
 #' @return 'fitlnpbin' returns the maximum likelihood estimate and confidence intervals of the "sig" overdispersion parameter of the LNP model:
+#' 
+#' @export
 
 fitlnpbin = function(nvec, rvec, level = 0.95, theta_option = "conservative", numbins = 1e4) {
     
     # 1. Binning the r vector
-    minrate = 1e-7 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
+    minrate = 1e-8 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
     rvec = pmax(minrate, rvec) # Setting values below minrate to minrate
     br = cut(log(rvec),breaks=numbins) # Binning rvec in log space
     binmeans = tapply(rvec, br, mean) # Mean value per bin
