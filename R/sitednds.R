@@ -108,12 +108,14 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
         theta_ml = lnp_est$ml$minimum
         theta_ci95 = lnp_est$sig_ci95
+        LL = -lnp_est$ml$objective # LogLik
         
     } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
         
         nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
         ml = optimize(nbin, interval=c(0,1000))
         theta_ml = ml$minimum
+        LL = -ml$objective # LogLik
         
         # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
         grid_proflik = function(bins=5, iter=5) {
@@ -198,10 +200,10 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         }
         
     } else {
-        recursites = thetaout = fpr_nonsyn = lnp_est = NULL
+        recursites = thetaout = fpr_nonsyn = lnp_est = LL = NULL
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recursites=recursites, theta=thetaout, fpr_nonsyn_q05=fpr_nonsyn))
+    return(list(recursites=recursites, theta=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
 
 }

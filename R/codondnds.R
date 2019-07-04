@@ -107,12 +107,14 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
         theta_ml = lnp_est$ml$minimum
         theta_ci95 = lnp_est$sig_ci95
+        LL = -lnp_est$ml$objective # LogLik
         
     } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
         
         nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
         ml = optimize(nbin, interval=c(0,1000))
         theta_ml = ml$minimum
+        LL = -ml$objective # LogLik
         
         # CI95% for theta using profile likelihood and iterative grid search (this yields slightly conservative CI95)
         grid_proflik = function(bins=5, iter=5) {
@@ -214,10 +216,10 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         }
         
     } else {
-        recurcodons = recurcodons_ext = thetaout = NULL
+        recurcodons = recurcodons_ext = thetaout = LL = NULL
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, theta=thetaout))
+    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, theta=thetaout, LL=LL))
     
 }
