@@ -109,6 +109,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         theta_ml = lnp_est$ml$minimum
         theta_ci95 = lnp_est$sig_ci95
         LL = -lnp_est$ml$objective # LogLik
+        thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
         
     } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
         
@@ -135,6 +136,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
             return(thetavec[ind])
         }
         theta_ci95 = grid_proflik(bins=5, iter=5)
+        thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
     }
     
     
@@ -156,8 +158,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
         
         if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
-
-            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
             message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
 
             # Cumulative Lognormal-Poisson using poilog::dpoilog
@@ -173,8 +173,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
             rownames(recursites) = NULL
             
         } else { # Negative binomial model
-            
-            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
             message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
             
             recursites$pval = pnbinom(q=recursites$freq-0.5, mu=recursites$mu, size=theta, lower.tail=F)
@@ -187,20 +185,26 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         # Estimating False Positive Rates based on the observed number of significant synonymous hits
         
         qcutoff = 0.05 # q-value cutoff to estimate false positive rates
-        signifsites = recursites[recursites$qval<qcutoff, ]
-        obs_hits = c(sum(signifsites$impact=="Synonymous" & !(signifsites$gene %in% c("TP53","CDKN2A","CDKN2A.p14arf"))), sum(signifsites$impact!="Synonymous"))
-        exp_frac = c(sum(dndsout$genemuts$exp_syn), sum(dndsout$genemuts$exp_mis+dndsout$genemuts$exp_non+dndsout$genemuts$exp_spl))
-        obsexp = (obs_hits[2]/obs_hits[1])/(exp_frac[2]/exp_frac[1])
-        fpr_nonsyn = list()
-        fpr_nonsyn$estimate = 1 / pmax(1,obsexp) # i.e. 1 - driver_fraction
-        fpr_nonsyn$conf.int = rev(1 / pmax(1,as.vector(poisson.test(x=obs_hits[2:1], T=exp_frac[2:1])$conf.int)))	
-        
-        if (fpr_nonsyn$estimate>qcutoff) {
-            warning(sprintf("The estimated false positive rate for nonsynonymous hits (qval<0.05) is %0.3f (CI95:%0.3f,%0.3f). High false positive rates (>>0.05) evidence problems with the data or the model and mean that the results are not reliable.", fpr_nonsyn$estimate, fpr_nonsyn$conf.int[1], fpr_nonsyn$conf.int[2]))
+        if (any(recursites$qval<qcutoff)) {
+            
+            signifsites = recursites[recursites$qval<qcutoff, ]
+            obs_hits = c(sum(signifsites$impact=="Synonymous" & !(signifsites$gene %in% c("TP53","CDKN2A","CDKN2A.p14arf"))), sum(signifsites$impact!="Synonymous"))
+            exp_frac = c(sum(dndsout$genemuts$exp_syn), sum(dndsout$genemuts$exp_mis+dndsout$genemuts$exp_non+dndsout$genemuts$exp_spl))
+            obsexp = (obs_hits[2]/obs_hits[1])/(exp_frac[2]/exp_frac[1])
+            fpr_nonsyn = list()
+            fpr_nonsyn$estimate = 1 / pmax(1,obsexp) # i.e. 1 - driver_fraction
+            fpr_nonsyn$conf.int = rev(1 / pmax(1,as.vector(poisson.test(x=obs_hits[2:1], T=exp_frac[2:1])$conf.int)))
+            
+            if (fpr_nonsyn$estimate>qcutoff) {
+                warning(sprintf("The estimated false positive rate for nonsynonymous hits (qval<0.05) is %0.3f (CI95:%0.3f,%0.3f). High false positive rates (>>0.05) evidence problems with the data or the model and mean that the results are not reliable.", fpr_nonsyn$estimate, fpr_nonsyn$conf.int[1], fpr_nonsyn$conf.int[2]))
+            }
+            
+        } else {
+            fpr_nonsyn = NULL
         }
         
     } else {
-        recursites = thetaout = fpr_nonsyn = lnp_est = LL = NULL
+        recursites = fpr_nonsyn = lnp_est = LL = NULL
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     

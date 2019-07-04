@@ -108,6 +108,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         theta_ml = lnp_est$ml$minimum
         theta_ci95 = lnp_est$sig_ci95
         LL = -lnp_est$ml$objective # LogLik
+        thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
         
     } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
         
@@ -134,6 +135,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
             return(thetavec[ind])
         }
         theta_ci95 = grid_proflik(bins=5, iter=5)
+        thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
     }
     
     
@@ -171,8 +173,6 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         recurcodons$dnds = recurcodons$freq / recurcodons$mu # Codon-wise dN/dS (point estimate)
         
         if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
-            
-            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
             message(sprintf("    Modelling substitution rates using a Lognormal-Poisson: sig = %0.3g (upperbound = %0.3g)", theta_ml, theta_ci95))
             
             # Cumulative Lognormal-Poisson using poilog::dpoilog
@@ -188,8 +188,6 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
             rownames(recurcodons) = NULL
             
         } else { # Negative binomial model
-            
-            thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95low","CI95_high"))
             message(sprintf("    Modelling substitution rates using a Negative Binomial: theta = %0.3g (CI95:%0.3g,%0.3g)", theta_ml, theta_ci95[1], theta_ci95[2]))
             
             recurcodons$pval = pnbinom(q=recurcodons$freq-0.5, mu=recurcodons$mu, size=theta, lower.tail=F)
@@ -216,7 +214,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
         }
         
     } else {
-        recurcodons = recurcodons_ext = thetaout = LL = NULL
+        recurcodons = recurcodons_ext = LL = NULL
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
