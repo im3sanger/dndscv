@@ -4,7 +4,7 @@
 \alias{sitednds}
 \title{sitednds}
 \usage{
-sitednds(dndsout, min_recurr = 2, gene_list = NULL,
+sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
   theta_option = "conservative", syn_drivers = "TP53:T125T",
   method = "NB", numbins = 10000)
 }
@@ -14,6 +14,8 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL,
 \item{min_recurr}{Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]}
 
 \item{gene_list}{List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
+
+\item{site_list}{List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of sites is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]}
 

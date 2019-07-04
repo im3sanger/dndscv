@@ -5,8 +5,8 @@
 \title{codondnds}
 \usage{
 codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
-  theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB",
-  numbins = 10000)
+  site_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T",
+  method = "NB", numbins = 10000)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv.}
@@ -16,6 +16,8 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 \item{min_recurr}{Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]}
 
 \item{gene_list}{List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]}
+
+\item{site_list}{List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
 
