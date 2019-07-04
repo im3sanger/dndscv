@@ -8,6 +8,7 @@
 #' @param refcds RefCDS object annotated with codon-level information using the buildcodon function.
 #' @param min_recurr Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
+#' @param site_list List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -20,7 +21,7 @@
 #' 
 #' @export
 
-codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting an overdispersed distribution at the codon level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Codon-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -145,28 +146,48 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, theta_op
     
     ## 2. Calculating codon-wise dN/dS ratios and P-values for recurrently mutated codons
     
-    # Counts of observed nonsynonymous mutations
-    annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Missense","Nonsense")),]
-    annotsubs$codon = substr(annotsubs$aachange,1,nchar(annotsubs$aachange)-1) # Codon position
-    annotsubs$codonsub = paste(annotsubs$chr,annotsubs$gene,annotsubs$codon,sep=":")
-    annotsubs = annotsubs[which(annotsubs$ref!=annotsubs$mut),]
-    freqs = sort(table(annotsubs$codonsub), decreasing=T)
-    freqs = freqs[freqs>=min_recurr]
-    
+    # Theta option
     if (theta_option=="mle" | theta_option=="MLE") {
         theta = theta_ml
     } else { # Conservative
         message("    Using the conservative bound of the confidence interval of the overdispersion parameter.")
         theta = theta_ci95[1]
     }
-
-    if (length(freqs)>1) {
     
-        recurcodons = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
-        colnames(recurcodons) = c("chr","gene","codon")
-        recurcodons$freq = freqs
+    # Creating the recurcodons object
+    annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Missense","Nonsense")),]
+    annotsubs$codon = substr(annotsubs$aachange,1,nchar(annotsubs$aachange)-1) # Codon position
+    annotsubs$codonsub = paste(annotsubs$chr,annotsubs$gene,annotsubs$codon,sep=":")
+    annotsubs = annotsubs[which(annotsubs$ref!=annotsubs$mut),]
+    freqs = sort(table(annotsubs$codonsub), decreasing=T)
+
+    recurcodons = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
+    colnames(recurcodons) = c("chr","gene","codon")
+    recurcodons$freq = freqs
+    
+    # Gene RHT
+    if (!is.null(gene_list)) {
+        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori genes")
+        recurcodons = recurcodons[which(recurcodons$gene %in% gene_list), ] # Restricting the p-value and q-value calculations to gene_list
+    }
+    
+    # Site RHT
+    if (!is.null(site_list)) {
+        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori sites (numtests = length(site_list))")
+        mutstr = paste(recurcodons$gene,recurcodons$aachange,sep=":")
+        if (!any(mutstr %in% site_list)) {
+            stop("No mutation was observed in the restricted list of known hotspots. Site-RHT cannot be run.")
+        }
+        recurcodons = recurcodons[which(mutstr %in% site_list), ] # Restricting the p-value and q-value calculations to site_list
+        numtests = length(site_list)
+    }
+    
+    # Restricting the recursites output by min_recurr
+    recurcodons = recurcodons[recurcodons$freq>=min_recurr, ] # Restricting the output to sites with min_recurr
+    
+    if (nrow(recurcodons)>1) {
+    
         recurcodons$mu = NA
-        
         codonnumeric = as.numeric(substr(recurcodons$codon,2,nchar(recurcodons$codon))) # Numeric codon position
         geneind = setNames(1:length(refcds), sapply(refcds, function(x) x$gene_name))
     

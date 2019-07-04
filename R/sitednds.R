@@ -7,6 +7,7 @@
 #' @param dndsout Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.
 #' @param min_recurr Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
+#' @param site_list List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of sites is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -20,7 +21,7 @@
 #'
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -140,9 +141,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
     ## 2. Calculating site-wise dN/dS ratios and P-values for recurrently mutated sites
     message("[2] Calculating site-wise dN/dS ratios and p-values...")
     
-    recursites = mutsites[mutsites$freq>=min_recurr, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
-    recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")]
-    
+    # Theta option
     if (theta_option=="mle" | theta_option=="MLE") {
         theta = theta_ml
     } else { # Conservative
@@ -150,9 +149,31 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
         theta = theta_ci95[1]
     }
     
-    recursites = recursites[which(recursites$gene %in% gene_list), ] # Restricting the p-value and q-value calculations to gene_list
+    # Creating the recursites object
+    recursites = mutsites[, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
+    recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")]
     
-    if (any(mutsites$freq>=min_recurr)==T) {
+    # Gene RHT
+    if (!is.null(gene_list)) {
+        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori genes")
+        recursites = recursites[which(recursites$gene %in% gene_list), ] # Restricting the p-value and q-value calculations to gene_list
+    }
+    
+    # Site RHT
+    if (!is.null(site_list)) {
+        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori sites (numtests = length(site_list))")
+        mutstr = paste(recursites$chr,recursites$pos,recursites$ref,recursites$mut,recursites$gene,recursites$aachange,sep=":")
+        if (!any(mutstr %in% site_list)) {
+            stop("No mutation was observed in the restricted list of known hotspots. Site-RHT cannot be run.")
+        }
+        recursites = recursites[which(mutstr %in% site_list), ] # Restricting the p-value and q-value calculations to site_list
+        numtests = length(site_list)
+    }
+    
+    # Restricting the recursites output by min_recurr
+    recursites = recursites[recursites$freq>=min_recurr, ] # Restricting the output to sites with min_recurr
+    
+    if (nrow(recursites)>0) {
         
         recursites$dnds = recursites$freq / recursites$mu # Site-wise dN/dS (point estimate)
         
@@ -193,6 +214,10 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, theta_option = "c
             
             if (fpr_nonsyn$estimate>qcutoff) {
                 warning(sprintf("The estimated false positive rate for nonsynonymous hits (qval<0.05) is %0.3f (CI95:%0.3f,%0.3f). High false positive rates (>>0.05) evidence problems with the data or the model and mean that the results are not reliable.", fpr_nonsyn$estimate, fpr_nonsyn$conf.int[1], fpr_nonsyn$conf.int[2]))
+            }
+            
+            if (!is.null(site_list)) { # We do not compute FPRs when restricting the analysis to a list of a priori hotspots
+                fpr_nonsyn = NULL
             }
             
         } else {
