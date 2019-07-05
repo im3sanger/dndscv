@@ -30,7 +30,7 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
 
 - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
 
-- theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
+- overdisp: Maximum likelihood estimate and CI95% for the overdispersion parameter (the size parameter of the negative binomial distribution or the sigma parameter of the lognormal distribution). The lower the size value or the higher the sigma value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 
 - fpr_nonsyn_q05: Fraction of the significant non-synonymous sites (qval<0.05) that are estimated to be false positives. This assumes that all synonymous mutations (except those in TP53 and CDKN2A) are false positives, thus offering a conservative estimate of the false positive rate.
 

@@ -5,8 +5,8 @@
 \title{codondnds}
 \usage{
 codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
-  codon_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T",
-  method = "NB", numbins = 10000)
+  codon_list = NULL, theta_option = "conservative",
+  syn_drivers = "TP53:T125T", method = "NB", numbins = 10000)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv.}
@@ -19,7 +19,7 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 \item{codon_list}{List of hotspot codons to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]}
 
-\item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
+\item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="conservative"]}
 
 \item{syn_drivers}{Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).}
 
@@ -34,7 +34,7 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 - recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
 
-- theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
+- overdisp: Maximum likelihood estimate and CI95% for the overdispersion parameter (the size parameter of the negative binomial distribution or the sigma parameter of the lognormal distribution). The lower the size value or the higher the sigma value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
 
 - LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites at a codon level.
 }

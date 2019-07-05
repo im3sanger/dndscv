@@ -9,7 +9,7 @@
 #' @param min_recurr Minimum number of mutations per codon to estimate codon-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
 #' @param codon_list List of hotspot codons to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
-#' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
+#' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="conservative"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
 #' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
@@ -17,12 +17,12 @@
 #' @return 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
 #' @return - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
 #' @return - recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
-#' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
+#' @return - overdisp: Maximum likelihood estimate and CI95% for the overdispersion parameter (the size parameter of the negative binomial distribution or the sigma parameter of the lognormal distribution). The lower the size value or the higher the sigma value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
 #' @return - LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites at a codon level.
 #'
 #' @export
 
-codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting an overdispersed distribution at the codon level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Codon-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -30,9 +30,16 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
     if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
     if (is.null(refcds[[1]]$codon_impact)) { stop("Invalid input: the input RefCDS object must contain codon-level annotation. Use the buildcodon function to add this information.") }
     
+    # Restricting refcds to genes in the dndsout object
+    refcds = refcds[sapply(refcds, function(x) x$gene_name) %in% dndsout$genemuts$gene_name] # Only input genes
+    
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
         g = as.vector(dndsout$genemuts$gene_name)
+        # Correcting CDKN2A if required (hg19)
+        if (any(g %in% c("CDKN2A.p14arf","CDKN2A.p16INK4a")) & any(gene_list=="CDKN2A")) {
+            gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
+        }
         nonex = gene_list[!(gene_list %in% g)]
         if (length(nonex)>0) {
             warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
@@ -241,6 +248,6 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, theta=thetaout, LL=LL))
+    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL))
     
 }

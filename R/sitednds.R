@@ -15,7 +15,7 @@
 #'
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
-#' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
+#' @return - overdisp: Maximum likelihood estimate and CI95% for the overdispersion parameter (the size parameter of the negative binomial distribution or the sigma parameter of the lognormal distribution). The lower the size value or the higher the sigma value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 #' @return - fpr_nonsyn_q05: Fraction of the significant non-synonymous sites (qval<0.05) that are estimated to be false positives. This assumes that all synonymous mutations (except those in TP53 and CDKN2A) are false positives, thus offering a conservative estimate of the false positive rate.
 #' @return - LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites.
 #'
@@ -35,6 +35,10 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
         g = as.vector(dndsout$genemuts$gene_name)
+        # Correcting CDKN2A if required (hg19)
+        if (any(g %in% c("CDKN2A.p14arf","CDKN2A.p16INK4a")) & any(gene_list=="CDKN2A")) {
+            gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
+        }
         nonex = gene_list[!(gene_list %in% g)]
         if (length(nonex)>0) {
             warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
@@ -233,6 +237,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recursites=recursites, theta=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
+    return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
 
 }
