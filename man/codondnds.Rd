@@ -5,7 +5,7 @@
 \title{codondnds}
 \usage{
 codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
-  site_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T",
+  codon_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T",
   method = "NB", numbins = 10000)
 }
 \arguments{
@@ -13,11 +13,11 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 \item{refcds}{RefCDS object annotated with codon-level information using the buildcodon function.}
 
-\item{min_recurr}{Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]}
+\item{min_recurr}{Minimum number of mutations per codon to estimate codon-wise dN/dS ratios. [default=2]}
 
 \item{gene_list}{List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]}
 
-\item{site_list}{List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
+\item{codon_list}{List of hotspot codons to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]}
 
 \item{theta_option}{2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]}
 
@@ -34,10 +34,12 @@ codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
 
 - recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
 
-- theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
+- theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
+
+- LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites at a codon level.
 }
 \description{
-Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
+Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of codons under apparent selection. Be very critical of the results and if suspicious codons appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
 }
 \author{
 Inigo Martincorena (Wellcome Sanger Institute)

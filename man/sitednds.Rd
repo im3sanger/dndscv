@@ -32,9 +32,9 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
 
 - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
 
-- recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+- fpr_nonsyn_q05: Fraction of the significant non-synonymous sites (qval<0.05) that are estimated to be false positives. This assumes that all synonymous mutations (except those in TP53 and CDKN2A) are false positives, thus offering a conservative estimate of the false positive rate.
 
-- recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+- LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites.
 }
 \description{
 Function to estimate site-wise dN/dS values and p-values against neutrality. To generate a valid input object for this function, use outmats=T when running dndscv. This function is in testing, please interpret the results with caution. Also note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. A considerable number of significant synonymous sites may reflect a problem with the data. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel). In the future, this function may be extended to perform inferences at a codon level instead of at a single-base level.
