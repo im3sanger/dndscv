@@ -16,8 +16,8 @@
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
 #' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
-#' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
-#' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
+#' @return - fpr_nonsyn_q05: Fraction of the significant non-synonymous sites (qval<0.05) that are estimated to be false positives. This assumes that all synonymous mutations (except those in TP53 and CDKN2A) are false positives, thus offering a conservative estimate of the false positive rate.
+#' @return - LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites.
 #'
 #' @export
 
@@ -43,7 +43,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     } else {
         numtests = sum(dndsout$L)
     }
-
+    
     # Counts of observed mutations
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$ref,annotsubs$mut,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
@@ -89,13 +89,17 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     }
     
     # Correcting the index when there are multiple synonymous mutations in the same gene and trinucleotide class
-    s = synsites$vecindex
+    s = snew = synsites$vecindex
+    sameind = 0
     for (j in 2:nrow(synsites)) {
         if (s[j]<=s[j-1]) {
-            s[j] = s[j-1] + 1
+            sameind = sameind + 1 # Annotating a run of elements
+            snew[j] = s[j-1] - sameind # We assign it an earlier position in the vector
+        } else {
+            sameind = 0
         }
     }
-    synsites$vecindex2 = s
+    synsites$vecindex2 = snew
     
     nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
     rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical

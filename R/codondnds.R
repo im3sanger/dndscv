@@ -1,14 +1,14 @@
 #' codondnds
 #'
-#' Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of sites under apparent selection. Be very critical of the results and if suspicious sites appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
+#' Function to estimate codon-wise dN/dS values and p-values against neutrality. To generate a valid RefCDS input object for this function, use the buildcodon function. Note that recurrent artefacts or SNP contamination can violate the null model and dominate the list of codons under apparent selection. Be very critical of the results and if suspicious codons appear recurrently mutated consider refining the variant calling (e.g. using a better unmatched normal panel).
 #'
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' 
 #' @param dndsout Output object from dndscv.
 #' @param refcds RefCDS object annotated with codon-level information using the buildcodon function.
-#' @param min_recurr Minimum number of mutations per site to estimate codon-wise dN/dS ratios. [default=2]
+#' @param min_recurr Minimum number of mutations per codon to estimate codon-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
-#' @param site_list List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
+#' @param codon_list List of hotspot codons to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
 #' @param theta_option 2 options: "mle" (uses the MLE of the negative binomial size parameter) or "conservative" (uses the lower bound of the CI95). Values other than "mle" will lead to the conservative option. [default="mle"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -17,11 +17,12 @@
 #' @return 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
 #' @return - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
 #' @return - recurcodons_ext: The same table of recurrently mutated codons, but including additional information on the contribution of different changes within a codon.
-#' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across sites not captured by the trinucleotide change or by variation across genes.
-#' 
+#' @return - theta: Maximum likelihood estimate and CI95% for the size parameter of the negative binomial distribution. The lower this value the higher the variation of the mutation rate across codons not captured by the trinucleotide change or by variation across genes.
+#' @return - LL: Log-likelihood of the fit of the overdispersed model (see "method" argument) to all synonymous sites at a codon level.
+#'
 #' @export
 
-codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_list = NULL, theta_option = "mle", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting an overdispersed distribution at the codon level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Codon-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -104,10 +105,10 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_lis
     rvec = rvec * sum(nvec) / sum(rvec) # Small correction ensuring that global observed and expected rates are identical
     
     
-    message("[2] Estimating overdispersion and calculating site-wise dN/dS ratios...")
+    message("[2] Estimating overdispersion and calculating codon-wise dN/dS ratios...")
     
     # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
-    if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+    if (method=="LNP") { # Modelling rates per codon with a Poisson-Lognormal mixture
         
         lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
         theta_ml = lnp_est$ml$minimum
@@ -115,7 +116,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_lis
         LL = -lnp_est$ml$objective # LogLik
         thetaout = setNames(c(theta_ml, theta_ci95), c("MLE","CI95_high"))
         
-    } else { # Modelling rates per site as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
+    } else { # Modelling rates per codon as negative binomially distributed (i.e. quantifying uncertainty above Poisson using a Gamma)
         
         nbin = function(theta, n=nvec, r=rvec) { -sum(dnbinom(x=n, mu=r, log=T, size=theta)) } # nbin loglik function for optimisation
         ml = optimize(nbin, interval=c(0,1000))
@@ -171,19 +172,19 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_lis
         recurcodons = recurcodons[which(recurcodons$gene %in% gene_list), ] # Restricting the p-value and q-value calculations to gene_list
     }
     
-    # Site RHT
-    if (!is.null(site_list)) {
-        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori sites (numtests = length(site_list))")
+    # Codon RHT
+    if (!is.null(codon_list)) {
+        message("    Peforming Restricted Hypothesis Testing on the input list of a-priori codons (numtests = length(codon_list))")
         mutstr = paste(recurcodons$gene,recurcodons$aachange,sep=":")
-        if (!any(mutstr %in% site_list)) {
-            stop("No mutation was observed in the restricted list of known hotspots. Site-RHT cannot be run.")
+        if (!any(mutstr %in% codon_list)) {
+            stop("No mutation was observed in the restricted list of known hotspots. Codon-RHT cannot be run.")
         }
-        recurcodons = recurcodons[which(mutstr %in% site_list), ] # Restricting the p-value and q-value calculations to site_list
-        numtests = length(site_list)
+        recurcodons = recurcodons[which(mutstr %in% codon_list), ] # Restricting the p-value and q-value calculations to codon_list
+        numtests = length(codon_list)
     }
     
-    # Restricting the recursites output by min_recurr
-    recurcodons = recurcodons[recurcodons$freq>=min_recurr, ] # Restricting the output to sites with min_recurr
+    # Restricting the recurcodons output by min_recurr
+    recurcodons = recurcodons[recurcodons$freq>=min_recurr, ] # Restricting the output to codons with min_recurr
     
     if (nrow(recurcodons)>1) {
     
@@ -197,7 +198,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, site_lis
         
         recurcodons$dnds = recurcodons$freq / recurcodons$mu # Codon-wise dN/dS (point estimate)
         
-        if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
+        if (method=="LNP") { # Modelling rates per codon with a Poisson-Lognormal mixture
             
             # Cumulative Lognormal-Poisson using poilog::dpoilog
             dpoilog = poilog::dpoilog
