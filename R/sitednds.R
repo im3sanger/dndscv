@@ -106,7 +106,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     synsites$vecindex2 = snew
     
     nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
-    rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical
+    #rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical (this excludes "syn_drivers")
+    rvec = rvec * sum(dndsout$genemuts$n_syn) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions, but does not exclude "syn_drivers")
     
     # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
     if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
