@@ -17,7 +17,7 @@
 fitlnpbin = function(nvec, rvec, level = 0.95, theta_option = "conservative", numbins = 1e4) {
     
     # 1. Binning the r vector
-    minrate = 1e-8 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
+    minrate = 1e-10 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
     rvec = pmax(minrate, rvec) # Setting values below minrate to minrate
     br = cut(log(rvec),breaks=numbins) # Binning rvec in log space
     binmeans = tapply(rvec, br, mean) # Mean value per bin
@@ -25,6 +25,9 @@ fitlnpbin = function(nvec, rvec, level = 0.95, theta_option = "conservative", nu
     message(sprintf("    Binning the rate vector: maximum deviation of %0.3g", max(abs(rvecbinned-rvec)/rvec)))
     rvec = rvecbinned # Using the binned values
     freqs = as.matrix(plyr::count(cbind(rvec,nvec))) # Frequency table
+    
+    # Excluding sites with rates < minrate from the calculation (they should yield LL=0)
+    freqs = freqs[which(freqs[,1] > minrate), ]
     
     # 2. Vectorising dpoilog
     dpoilog = poilog::dpoilog

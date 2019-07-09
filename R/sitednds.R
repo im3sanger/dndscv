@@ -8,6 +8,7 @@
 #' @param min_recurr Minimum number of mutations per site to estimate site-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
 #' @param site_list List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of sites is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]
+#' @param trinuc_list List of trinucleotide substitution to restrict the analysis of sitednds. This is used to estimate separate overdispersion parameters for different substitution contexts [default=NULL, sitednds will be run on all substitution contexts]
 #' @param theta_option 2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
@@ -21,7 +22,7 @@
 #'
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, trinuc_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
     
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -49,7 +50,17 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     }
     
     # Counts of observed mutations
+    
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
+    num_syn_drivers_masked = sum(paste(annotsubs$gene,annotsubs$aachange,sep=":") %in% syn_drivers)
+    
+    if (!is.null(trinuc_list)) { # Restricting sitednds to certain trinucleotide changes
+        annotsubs = annotsubs[which(paste(annotsubs$ref3_cod,annotsubs$mut3_cod,sep=">") %in% trinuc_list), ]
+        if (nrow(annotsubs)==0) {
+            stop("No mutations left after restricting by trinuc_list. Please review your input arguments and your mutation table (dndsout$annotmuts).")
+        }
+    }
+    
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$ref,annotsubs$mut,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
     annotsubs = annotsubs[which(annotsubs$ref!=annotsubs$mut),]
     freqs = sort(table(annotsubs$trisub), decreasing=T)
@@ -65,6 +76,11 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     sm = sm*sm["t"] # Absolute rates
     sm = sm[setdiff(names(sm),c("wmis","wnon","wspl","t"))] # Removing selection parameters
     sm = sm[order(names(sm))] # Sorting
+    
+    if (!is.null(trinuc_list)) { # Restricting sitednds to certain trinucleotide changes 
+        sm[!(names(sm) %in% trinuc_list)] = 0 # Setting all other rates to zero
+    }
+    
     mat_trisub = array(sm, dim=c(192,nrow(dndsout$genemuts))) # Relative mutation rates by trinucleotide
     mat_relmr = t(array(relmr, dim=c(nrow(dndsout$genemuts),192))) # Relative mutation rates by gene
     R = mat_trisub * mat_relmr # Expected rate for each mutation type in each gene
@@ -106,8 +122,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     synsites$vecindex2 = snew
     
     nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
-    #rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical (this excludes "syn_drivers")
-    rvec = rvec * sum(dndsout$genemuts$n_syn) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions, but does not exclude "syn_drivers")
+    #rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical (this does not work after subsetting substitutions)
+    rvec = rvec * (sum(dndsout$genemuts$n_syn)-num_syn_drivers_masked) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions)
     
     # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
     if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
