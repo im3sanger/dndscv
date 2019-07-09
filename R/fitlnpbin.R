@@ -17,7 +17,7 @@
 fitlnpbin = function(nvec, rvec, level = 0.95, theta_option = "conservative", numbins = 1e4) {
     
     # 1. Binning the r vector
-    minrate = 1e-10 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
+    minrate = 1e-8 # Values <<1/exome_length are due to 0 observed counts for a given trinucleotide
     rvec = pmax(minrate, rvec) # Setting values below minrate to minrate
     br = cut(log(rvec),breaks=numbins) # Binning rvec in log space
     binmeans = tapply(rvec, br, mean) # Mean value per bin
