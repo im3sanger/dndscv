@@ -13,6 +13,7 @@
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
 #' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
+#' @param kc List of a-priori known cancer genes (to be excluded when fitting the background model)
 #'
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
@@ -22,7 +23,7 @@
 #'
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, trinuc_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, trinuc_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4, kc = "cgc81") {
     
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -30,8 +31,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     # N and L matrices for synonymous mutations
     if (length(dndsout$N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
     if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
-    N = as.matrix(dndsout$N[,1,]) # We use as.matrix to handle gene_list of length 1
-    L = as.matrix(dndsout$L[,1,]) # We use as.matrix to handle gene_list of length 1
     
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
@@ -49,6 +48,21 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         numtests = sum(dndsout$L)
     }
     
+    # Input: known cancer genes to exclude from the background model fitting (the user can input a gene list as a character vector)
+    if (is.null(kc)) {
+        known_cancergenes = ""
+    } else if (kc[1] %in% c("cgc81")) {
+        data(list=sprintf("cancergenes_%s",kc), package="dndscv")
+    } else {
+        known_cancergenes = kc
+    }
+    
+    # L matrix
+    L = dndsout$L
+    L[,2:4,which(as.vector(dndsout$genemuts$gene_name) %in% known_cancergenes)] = 0 # Removing non-synonymous sites in known_cancergenes
+    L = apply(L, c(1,3), sum) # Total number of sites to be considered in the background model
+    
+    
     # Counts of observed mutations
     
     annotsubs = dndsout$annotmuts[which(dndsout$annotmuts$impact %in% c("Synonymous","Missense","Nonsense","Essential_Splice")),]
@@ -56,9 +70,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     
     if (!is.null(trinuc_list)) { # Restricting sitednds to certain trinucleotide changes
         annotsubs = annotsubs[which(paste(annotsubs$ref3_cod,annotsubs$mut3_cod,sep=">") %in% trinuc_list), ]
-        if (nrow(annotsubs)==0) {
-            stop("No mutations left after restricting by trinuc_list. Please review your input arguments and your mutation table (dndsout$annotmuts).")
-        }
+        if (nrow(annotsubs)==0) { stop("No mutations left after restricting by trinuc_list. Please review your input arguments and your mutation table (dndsout$annotmuts).") }
     }
     
     annotsubs$trisub = paste(annotsubs$chr,annotsubs$pos,annotsubs$ref,annotsubs$mut,annotsubs$gene,annotsubs$aachange,annotsubs$impact,annotsubs$ref3_cod,annotsubs$mut3_cod,sep=":")
@@ -97,7 +109,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     mutsites$trindex = trindex[paste(mutsites$ref3_cod, mutsites$mut3_cod, sep=">")]
     mutsites$geneindex = geneindex[mutsites$gene]
     
-    synsites = mutsites[which(mutsites$impact=="Synonymous"),]
+    # Mutations for the background model (excluding non-synonymous mutations in known_cancergenes)
+    synsites = mutsites[!(mutsites$impact!="Synonymous" & mutsites$gene %in% known_cancergenes),]
     synsites = synsites[!(paste(synsites$gene,synsites$aachange,sep=":") %in% syn_drivers),]
     Lcum = array(cumsum(L), dim=dim(L)) # Cumulative L indicating the position to place a given mutation in the nvec following rvec
     synsites$vecindex = apply(as.matrix(synsites[,c("trindex","geneindex")]), 1, function(x) Lcum[x[1], x[2]]) # Index for the mutation
@@ -122,7 +135,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     synsites$vecindex2 = snew
     
     nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
-    #rvec = rvec * sum(nvec) / sum(rvec) # Minor correction ensuring that global observed and expected rates are identical (this does not work after subsetting substitutions)
     rvec = rvec * (sum(dndsout$genemuts$n_syn)-num_syn_drivers_masked) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions)
     
     # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.

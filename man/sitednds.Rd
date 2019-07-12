@@ -5,8 +5,9 @@
 \title{sitednds}
 \usage{
 sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
-  theta_option = "conservative", syn_drivers = "TP53:T125T",
-  method = "NB", numbins = 10000)
+  trinuc_list = NULL, theta_option = "conservative",
+  syn_drivers = "TP53:T125T", method = "NB", numbins = 10000,
+  kc = "cgc81")
 }
 \arguments{
 \item{dndsout}{Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.}
@@ -17,6 +18,8 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
 
 \item{site_list}{List of hotspot sites to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of sites is decided a priori. [default=NULL, sitednds will be run on all genes in dndsout]}
 
+\item{trinuc_list}{List of trinucleotide substitution to restrict the analysis of sitednds. This is used to estimate separate overdispersion parameters for different substitution contexts [default=NULL, sitednds will be run on all substitution contexts]}
+
 \item{theta_option}{2 options: "mle" (uses the MLE of the overdispersion parameter) or "conservative" (uses the conservative bound of the CI95). Values other than "mle" will lead to the conservative option [default="conservative"]}
 
 \item{syn_drivers}{Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).}
@@ -24,6 +27,8 @@ sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
 \item{method}{Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]}
 
 \item{numbins}{Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.}
+
+\item{kc}{List of a-priori known cancer genes (to be excluded when fitting the background model)}
 }
 \value{
 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
