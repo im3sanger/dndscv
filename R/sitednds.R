@@ -199,12 +199,21 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     # Site RHT
     if (!is.null(site_list)) {
         message("    Peforming Restricted Hypothesis Testing on the input list of a-priori sites (numtests = length(site_list))")
-        mutstr = paste(recursites$chr,recursites$pos,recursites$ref,recursites$mut,recursites$gene,recursites$aachange,sep=":")
+        mutstr = paste(recursites$chr,recursites$pos,recursites$ref,recursites$mut,recursites$gene,recursites$aachange,recursites$ref3_cod,recursites$mut3_cod,sep=":")
         if (!any(mutstr %in% site_list)) {
             stop("No mutation was observed in the restricted list of known hotspots. Site-RHT cannot be run.")
         }
         recursites = recursites[which(mutstr %in% site_list), ] # Restricting the p-value and q-value calculations to site_list
         numtests = length(site_list)
+        
+        # Calculating global dN/dS ratios at known hotspots
+        auxsites = as.data.frame(do.call("rbind",strsplit(site_list,split=":")), stringsAsFactors=F)
+        auxsites = auxsites[auxsites$V5 %in% names(relmr), ]
+        neutralexp = sum(relmr[auxsites$V5]*sm[paste(auxsites$V7,auxsites$V8,sep=">")]) # Number of mutations expected at known hotspots expected under neutrality
+        numobs = sum(recursites$freq) # Number observed
+        poistest = poisson.test(numobs, T=neutralexp)
+        globaldnds_knownsites = setNames(c(numobs, neutralexp, poistest$estimate, poistest$conf.int), c("obs","exp","dnds","cilow","cihigh"))
+        message(sprintf("    Mutations at known hotspots: %0.0f observed, %0.3g expected, obs/exp~%0.3g (CI95:%0.3g,%0.3g).", globaldnds_knownsites[1], globaldnds_knownsites[2], globaldnds_knownsites[3], globaldnds_knownsites[4], globaldnds_knownsites[5]))
     }
     
     # Restricting the recursites output by min_recurr
@@ -266,6 +275,9 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         warning("No site was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
-
+    if (is.null(site_list)) {
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
+    } else {
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, globaldnds_knownsites=globaldnds_knownsites))
+    }
 }

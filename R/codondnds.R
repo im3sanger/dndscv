@@ -182,12 +182,28 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
     # Codon RHT
     if (!is.null(codon_list)) {
         message("    Peforming Restricted Hypothesis Testing on the input list of a-priori codons (numtests = length(codon_list))")
-        mutstr = paste(recurcodons$gene,recurcodons$aachange,sep=":")
+        mutstr = paste(recurcodons$gene,recurcodons$codon,sep=":")
         if (!any(mutstr %in% codon_list)) {
             stop("No mutation was observed in the restricted list of known hotspots. Codon-RHT cannot be run.")
         }
         recurcodons = recurcodons[which(mutstr %in% codon_list), ] # Restricting the p-value and q-value calculations to codon_list
         numtests = length(codon_list)
+        
+        # Calculating global dN/dS ratios at known hotcodons
+        auxcodons = as.data.frame(do.call("rbind",strsplit(codon_list,split=":")), stringsAsFactors=F)
+        auxcodons$V3 = as.numeric(substr(auxcodons$V2,2,nchar(auxcodons$V2)))
+        auxcodons = auxcodons[auxcodons$V1 %in% names(relmr), ]
+        colnames(auxcodons) = c("gene","codon","numcodon")
+        auxcodons$mu = NA
+        geneind = setNames(1:length(refcds), sapply(refcds, function(x) x$gene_name))
+        for (j in 1:nrow(auxcodons)) {
+            auxcodons$mu[j] = refcds[[geneind[auxcodons$gene[j]]]]$codon_rvec_ns[auxcodons$numcodon[j]] # Background non-synonymous rate for this codon
+        }
+        neutralexp = sum(auxcodons$mu) # Number of mutations expected at known hotspots expected under neutrality
+        numobs = sum(recurcodons$freq) # Number observed
+        poistest = poisson.test(numobs, T=neutralexp)
+        globaldnds_knowncodons = setNames(c(numobs, neutralexp, poistest$estimate, poistest$conf.int), c("obs","exp","dnds","cilow","cihigh"))
+        message(sprintf("    Mutations at known hotspots: %0.0f observed, %0.3g expected, obs/exp~%0.3g (CI95:%0.3g,%0.3g).", globaldnds_knowncodons[1], globaldnds_knowncodons[2], globaldnds_knowncodons[3], globaldnds_knowncodons[4], globaldnds_knowncodons[5]))
     }
     
     # Restricting the recurcodons output by min_recurr
@@ -248,6 +264,9 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
         warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
     
-    return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL))
-    
+    if (is.null(codon_list)) {
+        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL))
+    } else {
+        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL, globaldnds_knowncodons=globaldnds_knowncodons))
+    }
 }
