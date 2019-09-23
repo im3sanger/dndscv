@@ -7,6 +7,7 @@ Author: Inigo Martincorena
 Maintainer: Inigo Martincorena <im3@sanger.ac.uk>
 Description: This package contains functions for studying selection on coding sequences using a Poisson implementation of dN/dS. A Poisson model of dN/dS facilitates the study of selection beyond traditional codon models, including complex context-dependent mutation effects and selection on nonsense and splice site mutations. This model is best suited for resequencing studies, with very low density of mutations per base pair. The model was initially developed for cancer genome sequencing studies, and specific functions are provided to perform driver gene discovery using the dNdScv method on human cancer genomic data.
 Reference: Martincorena I et al, 2017. Universal patterns of selection in cancer and somatic tissues. Cell. https://www.ncbi.nlm.nih.gov/pubmed/29056346
+biocViews:
 Imports:
   seqinr,
   MASS,
