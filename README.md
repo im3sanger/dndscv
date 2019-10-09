@@ -11,6 +11,11 @@ The **dNdScv** R package is a group of maximum-likelihood dN/dS methods designed
 	(*i.e.* genes under positive selection in cancer) on datasets ranging from a few 
 	samples to thousands of samples, in whole-exome/genome or targeted sequencing studies. 
 	
+Although initially designed for cancer genomic studies, dNdScv can also be used to quantify
+	selection in other resequencing studies, such as SNP analyses, mutation accumulation 
+	studies in bacteria or for the discovery of mutations causing developmental disorders 
+	using data from human trios.
+	
 The background mutation rate of each gene is estimated by combining local information 
 	(synonymous mutations in the gene) and global information (variation of the mutation 
 	rate across genes, exploiting epigenomic covariates), and controlling for the sequence 
