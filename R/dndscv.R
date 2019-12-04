@@ -7,7 +7,7 @@
 #' 
 #' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
 #' @param gene_list List of genes to restrict the analysis (use for targeted sequencing studies)
-#' @param refdb Reference database (path to .rda file)
+#' @param refdb Reference database (path to .rda file or a pre-loaded array object in the right format)
 #' @param sm Substitution model (precomputed models are available in the data directory)
 #' @param kc List of a-priori known cancer genes (to be excluded from the indel background model)
 #' @param cv Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates] [cv=NULL runs dndscv without covariates]
@@ -56,15 +56,23 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
     
     # [Input] Reference database
-    if (refdb == "hg19") {
-        data("refcds_hg19", package="dndscv")
-        if (any(gene_list=="CDKN2A")) { # Replace CDKN2A in the input gene list with two isoforms
-            gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
-        }
+    refdb_class = class(refdb)
+    if ("character" %in% refdb_class) {
+        if (refdb == "hg19") {
+            data("refcds_hg19", package="dndscv")
+            if (any(gene_list=="CDKN2A")) { # Replace CDKN2A in the input gene list with two isoforms
+                gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
+            }
+        } else {
+            load(refdb)
+        }      
+    } else if("array" %in% refdb_class) {
+        # use the user-supplied RefCDS object
+        RefCDS = refdb
     } else {
-        load(refdb)
+        stop("Expected refdb to be \"hg19\", a file path, or a RefCDS-formatted array object.")
     }
-    
+
     # [Input] Gene list (The user can input a gene list as a character vector)
     if (is.null(gene_list)) {
         gene_list = sapply(RefCDS, function(x) x$gene_name) # All genes [default]
