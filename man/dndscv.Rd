@@ -84,7 +84,7 @@ dndscv(
 - wrongmuts: Table of input mutations with a wrong annotation of the reference base (if any).
 }
 \description{
-Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
+Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Default arguments use the GRCh37/hg19 version of the human genome. To run dNdScv on other assemblies or species see the buildref function and the dndscv_data GitHub repository.
 }
 \details{
 Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
