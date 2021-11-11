@@ -4,8 +4,13 @@
 \alias{fitlnpbin}
 \title{fitlnpbin}
 \usage{
-fitlnpbin(nvec, rvec, level = 0.95, theta_option = "conservative",
-  numbins = 10000)
+fitlnpbin(
+  nvec,
+  rvec,
+  level = 0.95,
+  theta_option = "conservative",
+  numbins = 10000
+)
 }
 \arguments{
 \item{nvec}{Vector of observed counts of mutations per site.}

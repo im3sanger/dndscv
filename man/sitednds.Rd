@@ -4,10 +4,18 @@
 \alias{sitednds}
 \title{sitednds}
 \usage{
-sitednds(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
-  trinuc_list = NULL, theta_option = "conservative",
-  syn_drivers = "TP53:T125T", method = "NB", numbins = 10000,
-  kc = "cgc81")
+sitednds(
+  dndsout,
+  min_recurr = 2,
+  gene_list = NULL,
+  site_list = NULL,
+  trinuc_list = NULL,
+  theta_option = "conservative",
+  syn_drivers = "TP53:T125T",
+  method = "NB",
+  numbins = 10000,
+  kc = "cgc81"
+)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv. To generate a valid input object for this function, use outmats=T when running dndscv.}

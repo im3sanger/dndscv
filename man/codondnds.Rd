@@ -4,9 +4,17 @@
 \alias{codondnds}
 \title{codondnds}
 \usage{
-codondnds(dndsout, refcds, min_recurr = 2, gene_list = NULL,
-  codon_list = NULL, theta_option = "conservative",
-  syn_drivers = "TP53:T125T", method = "NB", numbins = 10000)
+codondnds(
+  dndsout,
+  refcds,
+  min_recurr = 2,
+  gene_list = NULL,
+  codon_list = NULL,
+  theta_option = "conservative",
+  syn_drivers = "TP53:T125T",
+  method = "NB",
+  numbins = 10000
+)
 }
 \arguments{
 \item{dndsout}{Output object from dndscv.}

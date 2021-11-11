@@ -4,8 +4,15 @@
 \alias{buildref}
 \title{buildref}
 \usage{
-buildref(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1,
-  excludechrs = NULL, onlychrs = NULL, useids = F)
+buildref(
+  cdsfile,
+  genomefile,
+  outfile = "RefCDS.rda",
+  numcode = 1,
+  excludechrs = NULL,
+  onlychrs = NULL,
+  useids = F
+)
 }
 \arguments{
 \item{cdsfile}{Path to the reference transcript table.}
