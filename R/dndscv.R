@@ -1,6 +1,6 @@
 #' dNdScv
 #'
-#' Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Reference files are currently only available for the GRCh37/hg19 version of the human genome.
+#' Analyses of selection using the dNdScv and dNdSloc models. Default parameters typically increase the performance of the method on cancer genomic studies. Default arguments use the GRCh37/hg19 version of the human genome. To run dNdScv on other assemblies or species see the buildref function and the dndscv_data GitHub repository.
 #'
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #' @details Martincorena I, et al. (2017) Universal patterns of selection in cancer and somatic tissues. Cell. 171(5):1029-1041.
@@ -66,7 +66,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             }
         } else {
             load(refdb)
-        }      
+        }
     } else if("array" %in% refdb_class) {
         # use the user-supplied RefCDS object
         RefCDS = refdb
