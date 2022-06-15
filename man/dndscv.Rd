@@ -69,6 +69,8 @@ dndscv(
 
 - genemuts: Observed and expected numbers of mutations per gene.
 
+- geneindels: Observed and expected numbers of indels per gene.
+
 - mle_submodel: MLEs of the substitution model.
 
 - exclsamples: Samples excluded from the analysis.

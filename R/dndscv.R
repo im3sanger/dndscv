@@ -28,6 +28,7 @@
 #' @return - sel_loc: Gene-wise selection results using dNdSloc.
 #' @return - annotmuts: Annotated coding mutations.
 #' @return - genemuts: Observed and expected numbers of mutations per gene.
+#' @return - geneindels: Observed and expected numbers of indels per gene.
 #' @return - mle_submodel: MLEs of the substitution model.
 #' @return - exclsamples: Samples excluded from the analysis.
 #' @return - exclmuts: Coding mutations excluded from the analysis.
@@ -512,6 +513,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
         ## Indel recurrence: based on a negative binomial regression (ideally fitted excluding major known driver genes)
 
+        geneindels = NULL # Initialising
         if (nrow(indels) >= min_indels) {
 
             geneindels = as.data.frame(array(0,dim=c(length(RefCDS),8)))
@@ -594,9 +596,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     annot = annot[,setdiff(colnames(annot),c("start","end","geneind"))]
 
     if (outmats) {
-        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, N = Nall, L = Lall)
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, N = Nall, L = Lall)
     } else {
-        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase)
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase)
     }
 
 } # EOF
