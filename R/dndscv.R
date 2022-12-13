@@ -21,6 +21,7 @@
 #' @param numcode NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.
 #' @param outmats Output the internal N and L matrices (default = F)
 #' @param mingenecovs Minimum number of genes required to run the negative binomial regression model with covariates (default = 500)
+#' @param dc Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)
 #'
 #' @return 'dndscv' returns a list of objects:
 #' @return - globaldnds: Global dN/dS estimates across all genes.
@@ -39,7 +40,7 @@
 #'
 #' @export
 
-dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500) {
+dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500, dc = NULL) {
 
     ## 1. Environment
     message("[1] Loading the environment...")
@@ -105,6 +106,24 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         data(list=sprintf("submod_%s",sm), package="dndscv")
     } else {
         substmodel = sm
+    }
+
+    # [Input] Duplex coverage (dc argument)
+    if (!is.null(dc)) {
+        if (is.vector(dc)) {
+            if (any(is.na(dc)) | any(dc<=0)) {
+                stop(sprintf("Invalid duplex coverage for some genes, please revisit your use of the dc argument: %s.", paste(names(dc[is.na(dc)]), collapse=", ")))
+            } else {
+                dc = dc[sapply(RefCDS, function(x) x$gene_name)] # Duplex coverage vector
+                dc = dc / mean(dc, na.rm=T) # Normalising values relative to the mean
+                Lallgenes = array(sapply(RefCDS, function(x) x$L), dim=c(192,4,length(RefCDS))) # saving original L matrices
+                for (j in 1:length(RefCDS)) {
+                    RefCDS[[j]]$L = RefCDS[[j]]$L * dc[j] # Exposures relative to dc
+                }
+            }
+        } else {
+            stop("dc must be a Named Numeric Vector with the vector values corresponding to the mean duplex coverage per site per gene, and with the vector names corresponding to gene names")
+        }
     }
 
     # Expanding the reference sequences [for faster access]
@@ -511,6 +530,14 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         sel_cv = cbind(genemuts[,1:5],sel_cv)
         sel_cv = sel_cv[order(sel_cv$pallsubs_cv, sel_cv$pmis_cv, sel_cv$ptrunc_cv, -sel_cv$wmis_cv),] # Sorting genes in the output file
 
+        ## Synonymous recurrence: based on the negative binomial regression
+
+        syncv = data.frame(gene_name=genemuts$gene_name, n_syn=genemuts$n_syn, exp_syn_cv=genemuts$exp_syn_cv, r=NA, psyn=NA, qsyn=NA)
+        syncv$r = syncv$n_syn/syncv$exp_syn_cv
+        syncv$psyn = pnbinom(q=syncv$n_syn-0.1, mu=syncv$exp_syn_cv, size=theta, lower.tail=F) # p-value calculation using Negative Binomial distribution
+        syncv$qsyn = p.adjust(syncv$psyn, method="BH") # q-value adjustment
+        syncv = syncv[order(syncv$psyn, -syncv$r), ] # Sorting genes by p-value and ratio
+
         ## Indel recurrence: based on a negative binomial regression (ideally fitted excluding major known driver genes)
 
         geneindels = NULL # Initialising
@@ -522,6 +549,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             geneindels$n_ind = as.numeric(table(indels$gene)[geneindels[,1]]); geneindels[is.na(geneindels[,2]),2] = 0
             geneindels$n_induniq = as.numeric(table(unique(indels[,-1])$gene)[geneindels[,1]]); geneindels[is.na(geneindels[,3]),3] = 0
             geneindels$cds_length = sapply(RefCDS, function(x) x$CDS_length)
+
+            if (!is.null(dc)) {
+                geneindels$cds_length = geneindels$cds_length * dc # Normalising CDS length by duplex coverage as the relative "exposure" of the gene to indels
+            }
 
             if (use_indel_sites) {
                 geneindels$n_indused = geneindels[,3]
@@ -596,9 +627,9 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     annot = annot[,setdiff(colnames(annot),c("start","end","geneind"))]
 
     if (outmats) {
-        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, N = Nall, L = Lall)
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, N = Nall, L = Lall)
     } else {
-        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase)
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv)
     }
 
 } # EOF

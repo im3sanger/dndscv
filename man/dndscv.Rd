@@ -20,7 +20,8 @@ dndscv(
   outp = 3,
   numcode = 1,
   outmats = F,
-  mingenecovs = 500
+  mingenecovs = 500,
+  dc = NULL
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ dndscv(
 \item{outmats}{Output the internal N and L matrices (default = F)}
 
 \item{mingenecovs}{Minimum number of genes required to run the negative binomial regression model with covariates (default = 500)}
+
+\item{dc}{Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)}
 }
 \value{
 'dndscv' returns a list of objects:
