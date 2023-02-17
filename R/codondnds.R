@@ -209,7 +209,7 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
     # Restricting the recurcodons output by min_recurr
     recurcodons = recurcodons[recurcodons$freq>=min_recurr, ] # Restricting the output to codons with min_recurr
 
-    if (nrow(recurcodons)>1) {
+    if (nrow(recurcodons)>0) {
 
         recurcodons$mu = NA
         codonnumeric = as.numeric(substr(recurcodons$codon,2,nchar(recurcodons$codon))) # Numeric codon position
