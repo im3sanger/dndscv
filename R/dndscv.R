@@ -424,7 +424,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
     ## 5. dNdScv: Negative binomial regression (with or without covariates) + local synonymous mutations
 
-    nbreg = nbregind = NULL
+    nbreg = nbregind = geneindels = syncv = NULL
+
     if (outp > 2) {
 
         message("[5] Running dNdScv...")
@@ -540,7 +541,6 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
         ## Indel recurrence: based on a negative binomial regression (ideally fitted excluding major known driver genes)
 
-        geneindels = NULL # Initialising
         if (nrow(indels) >= min_indels) {
 
             geneindels = as.data.frame(array(0,dim=c(length(RefCDS),8)))
