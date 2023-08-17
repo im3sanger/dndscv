@@ -11,9 +11,9 @@
 #' @param sm Substitution model (precomputed models are available in the data directory)
 #' @param kc List of a-priori known cancer genes (to be excluded from the indel background model)
 #' @param cv Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates] [cv=NULL runs dndscv without covariates]
-#' @param max_muts_per_gene_per_sample If n<Inf, arbitrarily the first n mutations by chr position will be kept
+#' @param max_muts_per_gene_per_sample If n<Inf, arbitrarily the first n mutations by chr position will be kept (default = 3, please set this to Inf to avoid filtering out any mutation)
 #' @param max_coding_muts_per_sample Hypermutator samples often reduce power to detect selection
-#' @param use_indel_sites Use unique indel sites instead of the total number of indels (it tends to be more robust)
+#' @param use_indel_sites Use unique indel sites instead of the total number of indels (default = TRUE, which tends to be more robust for typical cancer or somatic mutation datasets)
 #' @param min_indels Minimum number of indels required to run the indel recurrence module
 #' @param maxcovs Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)
 #' @param constrain_wnon_wspl This constrains wnon==wspl (this typically leads to higher power to detect selection)
@@ -390,32 +390,43 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     if (outp > 1) {
         message("[4] Running dNdSloc...")
 
-        selfun_loc = function(j) {
-            y = as.numeric(genemuts[j,-1])
-            x = RefCDS[[j]]
-
-            # a. Neutral model: wmis==1, wnon==1, wspl==1
-            mrfold = sum(y[1:4])/sum(y[5:8]) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
-            ll0 = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,1,1,1),dim=c(4,numrates))), log=T)) # loglik null model
-
-            # b. Missense model: wmis==1, free wnon, free wspl
-            mrfold = max(1e-10, sum(y[c(1,2)])/sum(y[c(5,6)])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
-            wfree = y[3:4]/y[7:8]/mrfold; wfree[y[3:4]==0] = 0
-            llmis = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,1,wfree),dim=c(4,numrates))), log=T)) # loglik free wmis
-
-            # c. free wmis, wnon and wspl
-            mrfold = max(1e-10, y[1]/y[5]) # Correction factor of "t"
-            w = y[2:4]/y[6:8]/mrfold; w[y[2:4]==0] = 0 # MLE of dN/dS based on the local rate (using syn muts as neutral)
-            llall = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,w),dim=c(4,numrates))), log=T)) # loglik free wmis, wnon, wspl
-            w[w>1e4] = 1e4
-
-            p = 1-pchisq(2*(llall-c(llmis,ll0)),df=c(1,3))
-            return(c(w,p))
+        locll = function(nobs,nexp,x,neutralmuts) {
+            mrfold = max(1e-10, sum(nobs[neutralmuts])/sum(nexp[neutralmuts])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
+            w = rep(1,4)
+            w[-neutralmuts] = nobs[-neutralmuts]/nexp[-neutralmuts]/mrfold
+            w[nexp==0] = 0 # Suppressing cases where the expected rate is 0 (e.g. splice site mutations in genes with 1 exon)
+            ll = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(w,dim=c(4,numrates))), log=T)) # loglik
+            return(list(ll=ll,w=w))
         }
 
-        sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), selfun_loc)))
-        colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pall_loc")
+        selfun_loc = function(j) {
+            y = as.numeric(genemuts[j,-1])
+            nobs = y[1:4] # Number of observed mutations in the gene (Synonymous, Missense, Nonsense, Splice)
+            nexp = y[5:8] # Number of expected mutations in the gene (Synonymous, Missense, Nonsense, Splice)
+            x = RefCDS[[j]]
+
+            # Alternative likelihood models constraining specific classes of mutations to be neutral
+            ll0 = locll(nobs,nexp,x,1:4)$ll # Neutral model: wmis==1, wnon==1, wspl==1
+            llmis = locll(nobs,nexp,x,c(1,2))$ll # Missense model: wmis==1, wnon free, wspl free
+            llnon = locll(nobs,nexp,x,c(1,3))$ll # Nonsense model: wmis free, wnon==1, wspl free
+            llspl = locll(nobs,nexp,x,c(1,4))$ll # Splice model: wmis free, wnon free, wspl==1
+            lltrunc = locll(nobs,nexp,x,c(1,3,4))$ll # Truncation model: wmis free, wnon==1, wspl==1
+            h = locll(nobs,nexp,x,1) # Full selection model: wmis free, wnon free, wspl free
+            llall = h$ll
+            wfree = h$w[-1]; wfree[wfree>1e4] = 1e4 # MLEs for the free w parameters (values higher than 1e4 will be set to 1e4)
+
+            # Likelihood ratio tests: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls.
+            p = 1-pchisq(2*(llall-c(llmis,llnon,llspl,lltrunc,ll0)),df=c(1,1,1,2,3))
+
+            return(c(wfree,p))
+        }
+
+        sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j))))
+        colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
         sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+        sel_loc$qnon_loc = p.adjust(sel_loc$pnon_loc, method="BH")
+        sel_loc$qspl_loc = p.adjust(sel_loc$pspl_loc, method="BH")
+        sel_loc$qtrunc_loc = p.adjust(sel_loc$ptrunc_loc, method="BH")
         sel_loc$qall_loc = p.adjust(sel_loc$pall_loc, method="BH")
         sel_loc = cbind(genemuts[,1:5],sel_loc)
         sel_loc = sel_loc[order(sel_loc$pall_loc,sel_loc$pmis_loc,-sel_loc$wmis_loc),]

@@ -209,7 +209,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         # Calculating global dN/dS ratios at known hotspots
         auxsites = as.data.frame(do.call("rbind",strsplit(site_list,split=":")), stringsAsFactors=F)
         auxsites = auxsites[auxsites$V5 %in% names(relmr), ]
-        neutralexp = sum(relmr[auxsites$V5]*sm[paste(auxsites$V7,auxsites$V8,sep=">")]) # Number of mutations expected at known hotspots expected under neutrality
+        neutralexp = sum(relmr[auxsites$V5]*sm[paste(auxsites$V7,auxsites$V8,sep=">")]) # Number of mutations expected at known hotspots under neutrality
         numobs = sum(recursites$freq) # Number observed
         poistest = poisson.test(numobs, T=neutralexp)
         globaldnds_knownsites = setNames(c(numobs, neutralexp, poistest$estimate, poistest$conf.int), c("obs","exp","dnds","cilow","cihigh"))
