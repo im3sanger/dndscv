@@ -16,7 +16,7 @@
 #' @param use_indel_sites Use unique indel sites instead of the total number of indels (default = TRUE, which tends to be more robust for typical cancer or somatic mutation datasets)
 #' @param min_indels Minimum number of indels required to run the indel recurrence module
 #' @param maxcovs Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)
-#' @param constrain_wnon_wspl This constrains wnon==wspl (this typically leads to higher power to detect selection)
+#' @param constrain_wnon_wspl This constrains wnon==wspl in the dNdScv model (this typically leads to higher power to detect selection)
 #' @param outp Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv
 #' @param numcode NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.
 #' @param outmats Output the internal N and L matrices (default = F)
@@ -390,10 +390,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     if (outp > 1) {
         message("[4] Running dNdSloc...")
 
-        locll = function(nobs,nexp,x,neutralmuts) {
-            mrfold = max(1e-10, sum(nobs[neutralmuts])/sum(nexp[neutralmuts])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
+        locll = function(nobs,nexp,x,indneut) {
+            mrfold = max(1e-10, sum(nobs[indneut])/sum(nexp[indneut])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
             w = rep(1,4)
-            w[-neutralmuts] = nobs[-neutralmuts]/nexp[-neutralmuts]/mrfold
+            w[-indneut] = nobs[-indneut]/nexp[-indneut]/mrfold
             w[nexp==0] = 0 # Suppressing cases where the expected rate is 0 (e.g. splice site mutations in genes with 1 exon)
             ll = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(w,dim=c(4,numrates))), log=T)) # loglik
             return(list(ll=ll,w=w))
