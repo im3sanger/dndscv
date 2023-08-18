@@ -408,24 +408,46 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
             # Alternative likelihood models constraining specific classes of mutations to be neutral
             ll0 = locll(nobs,nexp,x,1:4)$ll # Neutral model: wmis==1, wnon==1, wspl==1
             llmis = locll(nobs,nexp,x,c(1,2))$ll # Missense model: wmis==1, wnon free, wspl free
-            llnon = locll(nobs,nexp,x,c(1,3))$ll # Nonsense model: wmis free, wnon==1, wspl free
-            llspl = locll(nobs,nexp,x,c(1,4))$ll # Splice model: wmis free, wnon free, wspl==1
             lltrunc = locll(nobs,nexp,x,c(1,3,4))$ll # Truncation model: wmis free, wnon==1, wspl==1
-            h = locll(nobs,nexp,x,1) # Full selection model: wmis free, wnon free, wspl free
-            llall = h$ll
+            h = locll(nobs,nexp,x,1) # Fully unconstrained free selection model: wmis free, wnon free, wspl free
+            llall_unc = h$ll
             wfree = h$w[-1]; wfree[wfree>1e4] = 1e4 # MLEs for the free w parameters (values higher than 1e4 will be set to 1e4)
 
-            # Likelihood ratio tests: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls.
-            p = 1-pchisq(2*(llall-c(llmis,llnon,llspl,lltrunc,ll0)),df=c(1,1,1,2,3))
+            if (constrain_wnon_wspl == 0) { # Free selection model: free wmis, free wnon, free wspl (called llall_unc)
+
+                # Models allowing free wnon or free wspl
+                llnon = locll(nobs,nexp,x,c(1,3))$ll # Nonsense model: wmis free, wnon==1, wspl free
+                llspl = locll(nobs,nexp,x,c(1,4))$ll # Splice model: wmis free, wnon free, wspl==1
+
+                # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls.
+                p = 1-pchisq(2*(llall_unc-c(llmis,llnon,llspl,lltrunc,ll0)),df=c(1,1,1,2,3))
+
+            } else { # Partially constrained free selection model: free wmis, free wnon==wspl (called llall)
+
+                # Model for truncating substitutions forcing wnon==wspl
+                mrfold = max(1e-10, sum(nobs[1])/sum(nexp[1])) # Correction factor of "t" based on the obs/exp of synonymous mutations in the gene
+                wmisfree = nobs[2]/nexp[2]/mrfold; wmisfree[nexp[2]==0] = 0
+                wtruncfree = sum(nobs[3:4])/sum(nexp[3:4])/mrfold; wtruncfree[sum(nexp[3:4])==0] = 0
+                wfree = c(wmisfree,wtruncfree,wtruncfree)
+                llall = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,wfree),dim=c(4,numrates))), log=T)) # loglik
+
+                # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls. The missense models (H0 and H1) is the same as for constrain_wnon_wspl == 0.
+                p = 1-pchisq(2*c(llall_unc-llmis,llall-c(lltrunc,ll0)),df=c(1,1,2)) # Notice that for lltrunc and ll0, there is one fewer df when using wnon==wspl
+            }
 
             return(c(wfree,p))
         }
 
         sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j))))
-        colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
-        sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
-        sel_loc$qnon_loc = p.adjust(sel_loc$pnon_loc, method="BH")
-        sel_loc$qspl_loc = p.adjust(sel_loc$pspl_loc, method="BH")
+        if (constrain_wnon_wspl == 0) {
+            colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
+            sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+            sel_loc$qnon_loc = p.adjust(sel_loc$pnon_loc, method="BH")
+            sel_loc$qspl_loc = p.adjust(sel_loc$pspl_loc, method="BH")
+        } else {
+            colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","ptrunc_loc","pall_loc")
+            sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+        }
         sel_loc$qtrunc_loc = p.adjust(sel_loc$ptrunc_loc, method="BH")
         sel_loc$qall_loc = p.adjust(sel_loc$pall_loc, method="BH")
         sel_loc = cbind(genemuts[,1:5],sel_loc)
