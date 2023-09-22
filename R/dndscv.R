@@ -21,6 +21,7 @@
 #' @param numcode NCBI genetic code number (default = 1; standard genetic code). To see the list of genetic codes supported use: ? seqinr::translate. Note that the same genetic code must be used in the dndscv and buildref functions.
 #' @param outmats Output the internal N and L matrices (default = F)
 #' @param mingenecovs Minimum number of genes required to run the negative binomial regression model with covariates (default = 500)
+#' @param onesided Option to run one-sided positive and negative selection tests per gene (default = FALSE). Note that one-sided tests are only performed for the wnon==wspl model, so using onesided=TRUE will overwrite constrain_wnon_wspl to TRUE.
 #' @param dc Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)
 #'
 #' @return 'dndscv' returns a list of objects:
@@ -40,7 +41,7 @@
 #'
 #' @export
 
-dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500, dc = NULL) {
+dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500, onesided = F, dc = NULL) {
 
     ## 1. Environment
     message("[1] Loading the environment...")
@@ -108,6 +109,11 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         substmodel = sm
     }
 
+    # [Input] One-sided tests (onesided argument)
+    if (onesided == T & constrain_wnon_wspl == F) {
+        warning("One-sided tests are currently only implemented for the wnon==wspl model. The argument constrain_wnon_wspl has been overwritten to TRUE.")
+    }
+    
     # [Input] Duplex coverage (dc argument)
     if (!is.null(dc)) {
         if (is.vector(dc)) {
@@ -388,70 +394,105 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     numrates = length(mutrates)
 
     if (outp > 1) {
-        message("[4] Running dNdSloc...")
-
-        locll = function(nobs,nexp,x,indneut) {
-            mrfold = max(1e-10, sum(nobs[indneut])/sum(nexp[indneut])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
-            w = rep(1,4)
-            w[-indneut] = nobs[-indneut]/nexp[-indneut]/mrfold
-            w[nexp==0] = 0 # Suppressing cases where the expected rate is 0 (e.g. splice site mutations in genes with 1 exon)
-            ll = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(w,dim=c(4,numrates))), log=T)) # loglik
-            return(list(ll=ll,w=w))
+      message("[4] Running dNdSloc...")
+      
+      locll = function(nobs,nexp,x,indneut) {
+        mrfold = max(1e-10, sum(nobs[indneut])/sum(nexp[indneut])) # Correction factor of "t" based on the obs/exp ratio of "neutral" mutations under the model
+        w = rep(1,4)
+        w[-indneut] = nobs[-indneut]/nexp[-indneut]/mrfold
+        w[nexp==0] = 0 # Suppressing cases where the expected rate is 0 (e.g. splice site mutations in genes with 1 exon)
+        ll = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(w,dim=c(4,numrates))), log=T)) # loglik
+        return(list(ll=ll,w=w))
+      }
+      
+      lrt_onesided = function(ll0,llmis,lltrunc,llall,w) {
+        # Under the 2 w model (wnon==wspl), one-sided tests can be performed using the log-likelihoods already calculated under different levels of constrain.
+        # Positive selection: H0: wmis<=1, wtrunc<=1. H1: wmis>1 | wtrunc>1.
+        # Negative selection: H0: wmis>=1, wtrunc>=1. H1: wmis<1 | wtrunc<1.
+        if (w[1]>=1 & w[2]>=1) {
+          ll0pos = ll0
+          ll0neg = llall
+        } else if (w[1]>=1 & w[2]<=1) {
+          ll0pos = llmis
+          ll0neg = lltrunc
+        } else if (w[1]<=1 & w[2]>=1) {
+          ll0pos = lltrunc
+          ll0neg = llmis
+        } else if (w[1]<=1 & w[2]<=1) {
+          ll0pos = llall
+          ll0neg = ll0
         }
-
-        selfun_loc = function(j) {
-            y = as.numeric(genemuts[j,-1])
-            nobs = y[1:4] # Number of observed mutations in the gene (Synonymous, Missense, Nonsense, Splice)
-            nexp = y[5:8] # Number of expected mutations in the gene (Synonymous, Missense, Nonsense, Splice)
-            x = RefCDS[[j]]
-
-            # Alternative likelihood models constraining specific classes of mutations to be neutral
-            ll0 = locll(nobs,nexp,x,1:4)$ll # Neutral model: wmis==1, wnon==1, wspl==1
-            llmis = locll(nobs,nexp,x,c(1,2))$ll # Missense model: wmis==1, wnon free, wspl free
-            lltrunc = locll(nobs,nexp,x,c(1,3,4))$ll # Truncation model: wmis free, wnon==1, wspl==1
-            h = locll(nobs,nexp,x,1) # Fully unconstrained free selection model: wmis free, wnon free, wspl free
-            llall_unc = h$ll
-            wfree = h$w[-1]; wfree[wfree>1e4] = 1e4 # MLEs for the free w parameters (values higher than 1e4 will be set to 1e4)
-
-            if (constrain_wnon_wspl == 0) { # Free selection model: free wmis, free wnon, free wspl (called llall_unc)
-
-                # Models allowing free wnon or free wspl
-                llnon = locll(nobs,nexp,x,c(1,3))$ll # Nonsense model: wmis free, wnon==1, wspl free
-                llspl = locll(nobs,nexp,x,c(1,4))$ll # Splice model: wmis free, wnon free, wspl==1
-
-                # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls.
-                p = 1-pchisq(2*(llall_unc-c(llmis,llnon,llspl,lltrunc,ll0)),df=c(1,1,1,2,3))
-
-            } else { # Partially constrained free selection model: free wmis, free wnon==wspl (called llall)
-
-                # Model for truncating substitutions forcing wnon==wspl
-                mrfold = max(1e-10, sum(nobs[1])/sum(nexp[1])) # Correction factor of "t" based on the obs/exp of synonymous mutations in the gene
-                wmisfree = nobs[2]/nexp[2]/mrfold; wmisfree[nexp[2]==0] = 0
-                wtruncfree = sum(nobs[3:4])/sum(nexp[3:4])/mrfold; wtruncfree[sum(nexp[3:4])==0] = 0
-                wfree = c(wmisfree,wtruncfree,wtruncfree)
-                llall = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,wfree),dim=c(4,numrates))), log=T)) # loglik
-
-                # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls. The missense models (H0 and H1) is the same as for constrain_wnon_wspl == 0.
-                p = 1-pchisq(2*c(llall_unc-llmis,llall-c(lltrunc,ll0)),df=c(1,1,2)) # Notice that for lltrunc and ll0, there is one fewer df when using wnon==wspl
-            }
-
-            return(c(wfree,p))
+        # One-sided LRTs: conservatively assuming 2 df even when under mixtures of positive and negative selection, the range of some parameters is constrained (1 df)
+        p = 1-pchisq(2*(llall-c(ll0pos,ll0neg)),df=c(2,2))
+        return(p=p)
+      }
+      
+      selfun_loc = function(j) {
+        y = as.numeric(genemuts[j,-1])
+        nobs = y[1:4] # Number of observed mutations in the gene (Synonymous, Missense, Nonsense, Splice)
+        nexp = y[5:8] # Number of expected mutations in the gene (Synonymous, Missense, Nonsense, Splice)
+        x = RefCDS[[j]]
+        
+        # Alternative likelihood models constraining specific classes of mutations to be neutral
+        ll0 = locll(nobs,nexp,x,1:4)$ll # Neutral model: wmis==1, wnon==1, wspl==1
+        llmis = locll(nobs,nexp,x,c(1,2))$ll # Missense model: wmis==1, wnon free, wspl free
+        lltrunc = locll(nobs,nexp,x,c(1,3,4))$ll # Truncation model: wmis free, wnon==1, wspl==1
+        h = locll(nobs,nexp,x,1) # Fully unconstrained free selection model: wmis free, wnon free, wspl free
+        llall_unc = h$ll
+        wfree = h$w[-1]; wfree[wfree>1e4] = 1e4 # MLEs for the free w parameters (values higher than 1e4 will be set to 1e4)
+        
+        if (constrain_wnon_wspl == 0) { # Free selection model: free wmis, free wnon, free wspl (called llall_unc)
+          
+          # Models allowing free wnon or free wspl
+          llnon = locll(nobs,nexp,x,c(1,3))$ll # Nonsense model: wmis free, wnon==1, wspl free
+          llspl = locll(nobs,nexp,x,c(1,4))$ll # Splice model: wmis free, wnon free, wspl==1
+          
+          # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls.
+          p = 1-pchisq(2*(llall_unc-c(llmis,llnon,llspl,lltrunc,ll0)),df=c(1,1,1,2,3))
+          
+        } else { # Partially constrained free selection model: free wmis, free wnon==wspl (called llall)
+          
+          # Model for truncating substitutions forcing wnon==wspl
+          mrfold = max(1e-10, sum(nobs[1])/sum(nexp[1])) # Correction factor of "t" based on the obs/exp of synonymous mutations in the gene
+          wmisfree = nobs[2]/nexp[2]/mrfold; wmisfree[nexp[2]==0] = 0
+          wtruncfree = sum(nobs[3:4])/sum(nexp[3:4])/mrfold; wtruncfree[sum(nexp[3:4])==0] = 0
+          wfree = c(wmisfree,wtruncfree,wtruncfree)
+          llall = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,wfree),dim=c(4,numrates))), log=T)) # loglik
+          
+          # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls. The missense models (H0 and H1) is the same as for constrain_wnon_wspl == 0.
+          p = 1-pchisq(2*c(llall_unc-llmis,llall-c(lltrunc,ll0)),df=c(1,1,2)) # Notice that for lltrunc and ll0, there is one fewer df when using wnon==wspl
+          
+          # Adding on-sided tests results if requested by the user
+          if (onesided == T) {
+            p_onesided = lrt_onesided(ll0,llmis,lltrunc,llall,wfree[1:2]) # ppos and pneg calculated by the lrt_onesided function
+            p = c(p, p_onesided)
+          }
         }
-
-        sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j))))
-        if (constrain_wnon_wspl == 0) {
-            colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
-            sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
-            sel_loc$qnon_loc = p.adjust(sel_loc$pnon_loc, method="BH")
-            sel_loc$qspl_loc = p.adjust(sel_loc$pspl_loc, method="BH")
+        return(c(wfree,p))
+      }
+      
+      sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j))))
+      if (constrain_wnon_wspl == 0) {
+        colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
+        sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+        sel_loc$qnon_loc = p.adjust(sel_loc$pnon_loc, method="BH")
+        sel_loc$qspl_loc = p.adjust(sel_loc$pspl_loc, method="BH")
+      } else {
+        if (onesided == F) {
+          colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","ptrunc_loc","pall_loc")
+          sel_loc$qtrunc_loc = p.adjust(sel_loc$ptrunc_loc, method="BH")
+          sel_loc$qall_loc = p.adjust(sel_loc$pall_loc, method="BH")
         } else {
-            colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","ptrunc_loc","pall_loc")
-            sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+          colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","ptrunc_loc","pall_loc", "ppos_loc", "pneg_loc")
+          sel_loc$qtrunc_loc = p.adjust(sel_loc$ptrunc_loc, method="BH")
+          sel_loc$qall_loc = p.adjust(sel_loc$pall_loc, method="BH")
+          sel_loc$qpos_loc = p.adjust(sel_loc$ppos_loc, method="BH")
+          sel_loc$qneg_loc = p.adjust(sel_loc$pneg_loc, method="BH")
         }
-        sel_loc$qtrunc_loc = p.adjust(sel_loc$ptrunc_loc, method="BH")
-        sel_loc$qall_loc = p.adjust(sel_loc$pall_loc, method="BH")
-        sel_loc = cbind(genemuts[,1:5],sel_loc)
-        sel_loc = sel_loc[order(sel_loc$pall_loc,sel_loc$pmis_loc,-sel_loc$wmis_loc),]
+        sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
+      }
+      sel_loc = cbind(genemuts[,1:5],sel_loc)
+      sel_loc = sel_loc[order(sel_loc$pall_loc,sel_loc$pmis_loc,-sel_loc$wmis_loc),]
     }
 
 
@@ -550,20 +591,37 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
                 wmisfree = y[2]/y[6]/mrfold; wmisfree[y[2]==0] = 0
                 wtruncfree = sum(y[3:4])/sum(y[7:8])/mrfold; wtruncfree[sum(y[3:4])==0] = 0
+                wfree = c(wmisfree,wtruncfree,wtruncfree)
                 llall = sum(dpois(x=x$N, lambda=x$L*mutrates*mrfold*t(array(c(1,wmisfree,wtruncfree,wtruncfree),dim=c(4,numrates))), log=T)) + dgamma(opt_t, shape=shape, scale=scale, log=T) # loglik free wmis, free wnon==wspl
                 p = 1-pchisq(2*c(llall_unc-llmis,llall-c(lltrunc,ll0)),df=c(1,1,2))
-                return(c(wmisfree,wtruncfree,wtruncfree,p))
+                
+                # Adding on-sided tests results if requested by the user
+                if (onesided == T) {
+                  p_onesided = lrt_onesided(ll0,llmis,lltrunc,llall,wfree[1:2]) # ppos and pneg calculated by the lrt_onesided function
+                  p = c(p, p_onesided)
+                }
+                
+                return(c(wfree,p))
             }
         }
 
         sel_cv = as.data.frame(t(sapply(1:nrow(genemuts), selfun_cv)))
-        colnames(sel_cv) = c("wmis_cv","wnon_cv","wspl_cv","pmis_cv","ptrunc_cv","pallsubs_cv")
-        sel_cv$qmis_cv = p.adjust(sel_cv$pmis_cv, method="BH")
-        sel_cv$qtrunc_cv = p.adjust(sel_cv$ptrunc_cv, method="BH")
-        sel_cv$qallsubs_cv = p.adjust(sel_cv$pallsubs_cv, method="BH")
+        if (onesided == F) {
+          colnames(sel_cv) = c("wmis_cv","wnon_cv","wspl_cv","pmis_cv","ptrunc_cv","pallsubs_cv")
+          sel_cv$qmis_cv = p.adjust(sel_cv$pmis_cv, method="BH")
+          sel_cv$qtrunc_cv = p.adjust(sel_cv$ptrunc_cv, method="BH")
+          sel_cv$qallsubs_cv = p.adjust(sel_cv$pallsubs_cv, method="BH")
+        } else {
+          colnames(sel_cv) = c("wmis_cv","wnon_cv","wspl_cv","pmis_cv","ptrunc_cv","pallsubs_cv","ppos_cv","pneg_cv")
+          sel_cv$qmis_cv = p.adjust(sel_cv$pmis_cv, method="BH")
+          sel_cv$qtrunc_cv = p.adjust(sel_cv$ptrunc_cv, method="BH")
+          sel_cv$qallsubs_cv = p.adjust(sel_cv$pallsubs_cv, method="BH")
+          sel_cv$qpos_cv = p.adjust(sel_cv$ppos_cv, method="BH")
+          sel_cv$qneg_cv = p.adjust(sel_cv$pneg_cv, method="BH")
+        }
         sel_cv = cbind(genemuts[,1:5],sel_cv)
         sel_cv = sel_cv[order(sel_cv$pallsubs_cv, sel_cv$pmis_cv, sel_cv$ptrunc_cv, -sel_cv$wmis_cv),] # Sorting genes in the output file
-
+        
         ## Synonymous recurrence: based on the negative binomial regression
 
         syncv = data.frame(gene_name=genemuts$gene_name, n_syn=genemuts$n_syn, exp_syn_cv=genemuts$exp_syn_cv, r=NA, psyn=NA, qsyn=NA)
@@ -639,17 +697,35 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
             # Statistical testing for indel recurrence per gene
 
-            geneindels$pind = pnbinom(q=geneindels$n_indused-1, mu=geneindels$exp_indcv, size=theta_indels, lower.tail=F)
-            geneindels$qind = p.adjust(geneindels$pind, method="BH")
-
-            # Fisher combined p-values (substitutions and indels)
-
-            sel_cv = merge(sel_cv, geneindels, by="gene_name")[,c("gene_name","n_syn","n_mis","n_non","n_spl","n_indused","wmis_cv","wnon_cv","wspl_cv","wind","pmis_cv","ptrunc_cv","pallsubs_cv","pind","qmis_cv","qtrunc_cv","qallsubs_cv","qind")]
-            colnames(sel_cv) = c("gene_name","n_syn","n_mis","n_non","n_spl","n_ind","wmis_cv","wnon_cv","wspl_cv","wind_cv","pmis_cv","ptrunc_cv","pallsubs_cv","pind_cv","qmis_cv","qtrunc_cv","qallsubs_cv","qind_cv")
-            sel_cv$pglobal_cv = 1 - pchisq(-2 * (log(sel_cv$pallsubs_cv) + log(sel_cv$pind_cv)), df = 4)
-            sel_cv$qglobal_cv = p.adjust(sel_cv$pglobal, method="BH")
-
-            sel_cv = sel_cv[order(sel_cv$pglobal_cv, sel_cv$pallsubs_cv, sel_cv$pmis_cv, sel_cv$ptrunc_cv, -sel_cv$wmis_cv),] # Sorting genes in the output file
+            if (onesided == F) {
+              
+              geneindels$pind = pnbinom(q=geneindels$n_indused-1, mu=geneindels$exp_indcv, size=theta_indels, lower.tail=F)
+              geneindels$qind = p.adjust(geneindels$pind, method="BH")
+              
+              # Fisher combined p-values (substitutions and indels)
+              sel_cv = merge(sel_cv, geneindels, by="gene_name")[,c("gene_name","n_syn","n_mis","n_non","n_spl","n_indused","wmis_cv","wnon_cv","wspl_cv","wind","pmis_cv","ptrunc_cv","pallsubs_cv","pind","qmis_cv","qtrunc_cv","qallsubs_cv","qind")]
+              colnames(sel_cv) = c("gene_name","n_syn","n_mis","n_non","n_spl","n_ind","wmis_cv","wnon_cv","wspl_cv","wind_cv","pmis_cv","ptrunc_cv","pallsubs_cv","pind_cv","qmis_cv","qtrunc_cv","qallsubs_cv","qind_cv")
+              sel_cv$pglobal_cv = 1 - pchisq(-2 * (log(sel_cv$pallsubs_cv) + log(sel_cv$pind_cv)), df = 4)
+              sel_cv$qglobal_cv = p.adjust(sel_cv$pglobal, method="BH")
+              
+            } else { # One-sided tests
+              
+              geneindels$pind_pos = pnbinom(q=geneindels$n_indused-1, mu=geneindels$exp_indcv, size=theta_indels, lower.tail=F)
+              geneindels$pind_neg = pnbinom(q=geneindels$n_indused, mu=geneindels$exp_indcv, size=theta_indels, lower.tail=T)
+              geneindels$qind_pos = p.adjust(geneindels$pind_pos, method="BH")
+              geneindels$qind_neg = p.adjust(geneindels$pind_neg, method="BH")
+              
+              # Fisher combined p-values (substitutions and indels)
+              sel_cv = merge(sel_cv, geneindels, by="gene_name")[,c("gene_name","n_syn","n_mis","n_non","n_spl","n_indused","wmis_cv","wnon_cv","wspl_cv","wind","pmis_cv","ptrunc_cv","pallsubs_cv","ppos_cv","pneg_cv","pind_pos","pind_neg","qmis_cv","qtrunc_cv","qallsubs_cv","qpos_cv","qneg_cv","qind_pos","qind_neg")]
+              colnames(sel_cv) = c("gene_name","n_syn","n_mis","n_non","n_spl","n_ind","wmis_cv","wnon_cv","wspl_cv","wind_cv","pmis_cv","ptrunc_cv","pallsubs_cv","psubpos_cv","psubneg_cv","pindpos_cv","pindneg_cv","qmis_cv","qtrunc_cv","qallsubs_cv","qsubpos_cv","qsubneg_cv","qindpos_cv","qindneg_cv")
+              
+              sel_cv$pglobalpos_cv = 1 - pchisq(-2 * (log(sel_cv$psubpos_cv) + log(sel_cv$pindpos_cv)), df = 4)
+              sel_cv$pglobalneg_cv = 1 - pchisq(-2 * (log(sel_cv$psubneg_cv) + log(sel_cv$pindneg_cv)), df = 4)
+              sel_cv$qglobalpos_cv = p.adjust(sel_cv$pglobalpos_cv, method="BH")
+              sel_cv$qglobalneg_cv = p.adjust(sel_cv$pglobalneg_cv, method="BH")
+            }
+  
+            sel_cv = sel_cv[order(sel_cv$pallsubs_cv, sel_cv$pmis_cv, sel_cv$ptrunc_cv, -sel_cv$wmis_cv),] # Sorting genes in the output file
         }
     }
 
