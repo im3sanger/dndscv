@@ -16,17 +16,17 @@ genesetdnds(dndsout, gene_list, sm = "192r_3w")
 \value{
 'genesetdnds' returns a list of objects:
 
-globaldnds_geneset: Global dN/dS estimates in the gene set.
+globaldnds_geneset: Global dN/dS estimates in the gene set, including Wald CI95%, Wald p-values and LRT (recommended) p-values.
 
-globaldnds_rest: Global dN/dS estimates in all other genes.
+globaldnds_rest: Global dN/dS estimates in all other genes, including Wald CI95%, Wald p-values and LRT (recommended) p-values.
 }
 \description{
-Function to estimate global dN/dS values for a gene set when using whole-exome 
-data. Global dN/dS values for a set of genes can also be obtained using dndscv 
-(gene_list argument), but that option estimates the trinucleotide mutation rates 
+Function to estimate global dN/dS values for a gene set when using whole-exome
+data. Global dN/dS values for a set of genes can also be obtained using dndscv
+(gene_list argument), but that option estimates the trinucleotide mutation rates
 exclusively from the list of genes of interest. This may be prefereable in large
 datasets, but in small datasets, the genesetdnds option estimates global dN/dS
-values for a set of genes while using all genes in the exome to fit the 
+values for a set of genes while using all genes in the exome to fit the
 substitution model. Usage: genesetdnds(dndsout, gene_list).
 }
 \details{

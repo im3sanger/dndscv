@@ -21,6 +21,7 @@ dndscv(
   numcode = 1,
   outmats = F,
   mingenecovs = 500,
+  onesided = F,
   dc = NULL
 )
 }
@@ -37,17 +38,17 @@ dndscv(
 
 \item{cv}{Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates] [cv=NULL runs dndscv without covariates]}
 
-\item{max_muts_per_gene_per_sample}{If n<Inf, arbitrarily the first n mutations by chr position will be kept}
+\item{max_muts_per_gene_per_sample}{If n<Inf, arbitrarily the first n mutations by chr position will be kept (default = 3, please set this to Inf to avoid filtering out any mutation)}
 
 \item{max_coding_muts_per_sample}{Hypermutator samples often reduce power to detect selection}
 
-\item{use_indel_sites}{Use unique indel sites instead of the total number of indels (it tends to be more robust)}
+\item{use_indel_sites}{Use unique indel sites instead of the total number of indels (default = TRUE, which tends to be more robust for typical cancer or somatic mutation datasets)}
 
 \item{min_indels}{Minimum number of indels required to run the indel recurrence module}
 
 \item{maxcovs}{Maximum number of covariates that will be considered (additional columns in the matrix of covariates will be excluded)}
 
-\item{constrain_wnon_wspl}{This constrains wnon==wspl (this typically leads to higher power to detect selection)}
+\item{constrain_wnon_wspl}{This constrains wnon==wspl in the dNdScv model (this typically leads to higher power to detect selection)}
 
 \item{outp}{Output: 1 = Global dN/dS values; 2 = Global dN/dS and dNdSloc; 3 = Global dN/dS, dNdSloc and dNdScv}
 
@@ -56,6 +57,8 @@ dndscv(
 \item{outmats}{Output the internal N and L matrices (default = F)}
 
 \item{mingenecovs}{Minimum number of genes required to run the negative binomial regression model with covariates (default = 500)}
+
+\item{onesided}{Option to run one-sided positive and negative selection tests per gene (default = FALSE). Note that one-sided tests are only performed for the wnon==wspl model, so using onesided=TRUE will overwrite constrain_wnon_wspl to TRUE.}
 
 \item{dc}{Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)}
 }
