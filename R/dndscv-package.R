@@ -26,5 +26,5 @@
 #' @import GenomicRanges
 #' @import IRanges
 #' @import Rsamtools
-#' @import Biostrings
+#' @importFrom Biostrings DNAString
 NA
