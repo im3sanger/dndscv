@@ -661,7 +661,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
                     geneindels$excl = F
                     message("    No gene was excluded from the background indel model.")
                 } else {
-                    warning(sprintf("    Genes were excluded from the indel background model based on the substitution data: %s.", paste(newkc, collapse=", ")))
+                    message(sprintf("    Genes were excluded from the indel background model based on the substitution data: %s.", paste(newkc, collapse=", ")))
                 }
             }
 

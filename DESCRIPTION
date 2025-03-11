@@ -23,4 +23,4 @@ License: GPL-3
 Encoding: UTF-8
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.1
