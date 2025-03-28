@@ -117,11 +117,11 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     # [Input] Duplex coverage (dc argument)
     if (!is.null(dc)) {
         if (is.vector(dc)) {
+            dc = dc[sapply(RefCDS, function(x) x$gene_name)] # Duplex coverage vector
+            #dc = dc / mean(dc, na.rm=T) # Normalising values relative to the mean
             if (any(is.na(dc)) | any(dc<=0)) {
-                stop(sprintf("Invalid duplex coverage for some genes, please revisit your use of the dc argument: %s.", paste(names(dc[is.na(dc)]), collapse=", ")))
+                stop(sprintf("Invalid, negative or missing duplex coverage for some genes, please revisit your use of the dc argument: %s.", paste(names(dc[is.na(dc)]), collapse=", ")))
             } else {
-                dc = dc[sapply(RefCDS, function(x) x$gene_name)] # Duplex coverage vector
-                #dc = dc / mean(dc, na.rm=T) # Normalising values relative to the mean
                 Lallgenes = array(sapply(RefCDS, function(x) x$L), dim=c(192,4,length(RefCDS))) # saving original L matrices
                 for (j in 1:length(RefCDS)) {
                     RefCDS[[j]]$L = RefCDS[[j]]$L * dc[j] # Exposures relative to dc
