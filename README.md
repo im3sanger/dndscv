@@ -23,13 +23,15 @@ When using the dndscv function in the package (sel_cv output object), the backgr
     mutation rate of each gene is estimated by combining local information 
 	(synonymous mutations in the gene) and global information (variation of the mutation 
 	rate across genes, exploiting epigenomic covariates), and controlling for the sequence 
-	composition of the gene and mutational signatures. This allows to perform more
-	sensitive inferences of positive selection in sparse datasets. Unlike traditional 
-	implementations of dN/dS using Markov-chain models, mutations in dNdScv are modelled
-	as Poisson events (or negative binomial events), which allows the use of more
-	complex substitution models and the estimation of dN/dS ratios for truncating
-	mutations. By default, *dNdScv* uses a trinucleotide context-dependent substitution 
-	model, which is important to avoid common biases affecting simpler substitution 
+	composition of the gene and mutational signatures. Constraining the expected neutral
+	mutation rate of a gene using information from other genes considerably increases
+	the sensitivity to detect positive selection in sparse datasets.
+	
+Unlike traditional implementations of dN/dS using Markov-chain models, the underlying
+    Poisson assumptions in dNdScv allow the use of more complex context-dependent 
+    substitution models and the estimation of dN/dS ratios for truncating mutations. 
+    By default, *dNdScv* uses a trinucleotide context-dependent substitution model, 
+    which is important to avoid common biases affecting simpler substitution 
 	models in dN/dS (Greenman *et al.*, 2006, and Martincorena *et al*, 2017).
 
 Installation
@@ -68,7 +70,7 @@ http://www.cell.com/cell/fulltext/S0092-8674(17)31136-4
 
 Author
 --------
-Inigo Martincorena.
+Inigo Martincorena
 
 Acknowledgements
 --------
