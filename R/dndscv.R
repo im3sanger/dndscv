@@ -7,7 +7,7 @@
 #'
 #' @param mutations Table of mutations (5 columns: sampleID, chr, pos, ref, alt). Only list independent events as mutations.
 #' @param gene_list List of genes to restrict the analysis (use for targeted sequencing studies)
-#' @param refdb Reference database (path to .rda file or a pre-loaded array object in the right format)
+#' @param refdb Reference database. Use refdb="hg19" (default) to use the human GRCh37/hg19 assembly, and "hg38" for GRCh38/hg38. For any other assembly or species, please provide a reference database (as a path to .rda file). Ready-made RefCDS rda files for several popular species can be found in a separate dndscv_data R package. Users can also generate their own RefCDS for any species using the buildref() function.
 #' @param sm Substitution model (precomputed models are available in the data directory)
 #' @param kc List of a-priori known cancer genes (to be excluded from the indel background model)
 #' @param cv Covariates (a matrix of covariates -columns- for each gene -rows-) [default: reference covariates] [cv=NULL runs dndscv without covariates]
@@ -64,9 +64,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     if ("character" %in% refdb_class) {
         if (refdb == "hg19") {
             data("refcds_hg19", package="dndscv")
-            if (any(gene_list=="CDKN2A")) { # Replace CDKN2A in the input gene list with two isoforms
-                gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a"))
-            }
+            if (any(gene_list=="CDKN2A")) { gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a")) } # Replace CDKN2A in the input gene list with two isoforms
+        } else if (refdb == "hg38") {
+            data("refcds_GRCh38_hg38", package="dndscv")
+            if (any(gene_list=="CDKN2A")) { gene_list = unique(c(setdiff(gene_list,"CDKN2A"),"CDKN2A.p14arf","CDKN2A.p16INK4a")) } # Replace CDKN2A in the input gene list with two isoforms
         } else {
             load(refdb)
         }
@@ -74,7 +75,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         # use the user-supplied RefCDS object
         RefCDS = refdb
     } else {
-        stop("Expected refdb to be \"hg19\", a file path, or a RefCDS-formatted array object.")
+        stop("Expected refdb to be \"hg19\", \"hg38\", a file path, or a RefCDS-formatted array object.")
     }
 
     # [Input] Gene list (The user can input a gene list as a character vector)
@@ -89,6 +90,13 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
 
     # [Input] Covariates (The user can input a custom set of covariates as a matrix)
+    if (is.character(cv) & is.character(refdb)) {
+        if (refdb=="hg38" & cv=="hg19") {
+            # The user is using GRCh38/hg38 but has not changed the default covariates (hg19) to the recommended hg38 covariates. We change them and issue a message.
+            message("    Using the default covariates for GRCh38/hg38. Please use the cv argument to use custom covariates if preferred.")
+            cv = "hg19_hg38_epigenome_pcawg"
+        }
+    }
     if (is.character(cv)) {
         data(list=sprintf("covariates_%s",cv), package="dndscv")
     } else {
