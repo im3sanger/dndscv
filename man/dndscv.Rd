@@ -22,7 +22,8 @@ dndscv(
   outmats = F,
   mingenecovs = 500,
   onesided = F,
-  dc = NULL
+  dc = NULL,
+  sitedcfile = NULL
 )
 }
 \arguments{
@@ -30,7 +31,7 @@ dndscv(
 
 \item{gene_list}{List of genes to restrict the analysis (use for targeted sequencing studies)}
 
-\item{refdb}{Reference database (path to .rda file or a pre-loaded array object in the right format)}
+\item{refdb}{Reference database. Use refdb="hg19" (default) to use the human GRCh37/hg19 assembly, and "hg38" for GRCh38/hg38. For any other assembly or species, please provide a reference database (as a path to .rda file). Ready-made RefCDS rda files for several popular species can be found in a separate dndscv_data R package. Users can also generate their own RefCDS for any species using the buildref() function.}
 
 \item{sm}{Substitution model (precomputed models are available in the data directory)}
 
@@ -61,6 +62,8 @@ dndscv(
 \item{onesided}{Option to run one-sided positive and negative selection tests per gene (default = FALSE). Note that one-sided tests are only performed for the wnon==wspl model, so using onesided=TRUE will overwrite constrain_wnon_wspl to TRUE.}
 
 \item{dc}{Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)}
+
+\item{sitedcfile}{Bigwig file with the total duplex depth per site in the dataset. Use this argument only when running dNdScv on duplex sequencing data, to account for site-level duplex coverage information. Users should only use dc (mean duplex coverage per gene) or sitedcfile (site-level correction) as inputs, not both (default = NULL)}
 }
 \value{
 'dndscv' returns a list of objects:

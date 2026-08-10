@@ -13,8 +13,6 @@
 #' driver genes (i.e. genes under positive selection in cancer) on datasets ranging
 #' from a few samples to thousands of samples, in whole-exome/genome or targeted
 #' sequencing studies.
-#' @name dndscv-package
-#' @docType package
 #' @title Detection of selection in cancer and somatic evolution
 #' @author Inigo Martincorena, Wellcome Trust Sanger Institute, \email{im3@@sanger.ac.uk}
 #' @references Martincorena I, et al. (2017) Universal Patterns of Selection in Cancer and Somatic Tissues. Cell.
@@ -27,4 +25,5 @@
 #' @import IRanges
 #' @import Rsamtools
 #' @import Biostrings
-NA
+#' @import rtracklayer
+"_PACKAGE"

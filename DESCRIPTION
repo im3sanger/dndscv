@@ -17,7 +17,8 @@ Imports:
   MASS,
   Rsamtools,
   poilog,
-  plyr
+  plyr,
+  rtracklayer
 LazyData: false
 License: GPL-3
 Encoding: UTF-8
