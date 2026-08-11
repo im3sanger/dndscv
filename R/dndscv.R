@@ -188,21 +188,22 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
       rows = RefCDS[[j]]$codon_rates
       cols = RefCDS[[j]]$codon_impact
       L = array(0, dim=c(192,4))
-      for (h in 1:length(dcvec)) { L[rows[h],cols[h]] = L[rows[h],cols[h]] + dcvec[h] }
-      # Splice positions
-      if (length(RefCDS[[j]]$intervals_splice)>0) {
-        # Vectors of trinucleotide substitutions for the splice site mutations
-        splseq = as.character(as.vector(RefCDS[[j]]$seq_splice))
-        splseq1up = as.character(as.vector(RefCDS[[j]]$seq_splice1up))
-        splseq1down = as.character(as.vector(RefCDS[[j]]$seq_splice1down))
-        old_trinuc = rep(paste(splseq1up, splseq, splseq1down, sep=""), each=3)
-        new_trinuc = paste(rep(splseq1up, each=3), c(sapply(splseq, function(x) nt[nt!=x])), rep(splseq1down,each=3), sep="")
-        rows = as.integer(trinucsubsind[paste(old_trinuc, new_trinuc, sep=">")])
-        # Adding the duplex coverage per site to the L matrix for each of the splice sites
-        dcvec = rep(RefCDS[[j]]$dcvec_spl, each=3) # Duplex coverage per site
-        for (h in 1:length(dcvec)) { L[rows[h],4] = L[rows[h],4] + dcvec[h] }
+      if (length(dcvec)>0) { # If used to handle empty coverage vectors (e.g. for genes in chromosomes not present in the bigwig file)
+          for (h in 1:length(dcvec)) { L[rows[h],cols[h]] = L[rows[h],cols[h]] + dcvec[h] }
+          # Splice positions
+          if (length(RefCDS[[j]]$intervals_splice)>0) {
+            # Vectors of trinucleotide substitutions for the splice site mutations
+            splseq = as.character(as.vector(RefCDS[[j]]$seq_splice))
+            splseq1up = as.character(as.vector(RefCDS[[j]]$seq_splice1up))
+            splseq1down = as.character(as.vector(RefCDS[[j]]$seq_splice1down))
+            old_trinuc = rep(paste(splseq1up, splseq, splseq1down, sep=""), each=3)
+            new_trinuc = paste(rep(splseq1up, each=3), c(sapply(splseq, function(x) nt[nt!=x])), rep(splseq1down,each=3), sep="")
+            rows = as.integer(trinucsubsind[paste(old_trinuc, new_trinuc, sep=">")])
+            # Adding the duplex coverage per site to the L matrix for each of the splice sites
+            dcvec = rep(RefCDS[[j]]$dcvec_spl, each=3) # Duplex coverage per site
+            for (h in 1:length(dcvec)) { L[rows[h],4] = L[rows[h],4] + dcvec[h] }
+          }
       }
-
       RefCDS[[j]]$L = L # Overwriting the coverage-naive L matrix by a duplex-coverage adjusted L matrix
     }
   }
