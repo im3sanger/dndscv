@@ -208,6 +208,13 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     }
   }
 
+  # Evaluating whether any gene in the RefCDS have sum(L)==0 (zero sites or zero coverage) and removing it from the RefCDS and from the selection analyses (this can happen when using dc and sitedcfile arguments for genes with zero duplex coverage)
+  zerosites = which(sapply(RefCDS, function(x) sum(x$L))==0)
+  if (length(zerosites)>0) {
+      warning(sprintf("%0.0f genes excluded from the dNdScv and dNdSloc analyses due to zero expected mutations (typically caused by zero duplex coverage when using the dc or sitedcfile arguments)", length(zerosites)))
+      RefCDS = RefCDS[-zerosites]
+  }
+
 
   ## 2. Mutation annotation
   message("[2] Annotating the mutations...")
