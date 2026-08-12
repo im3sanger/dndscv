@@ -489,7 +489,8 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
       return(p=p)
     }
 
-    selfun_loc = function(j) {
+    selfun_loc = function(j, genemuts) {
+
       y = as.numeric(genemuts[j,-1])
       nobs = y[1:4] # Number of observed mutations in the gene (Synonymous, Missense, Nonsense, Splice)
       nexp = y[5:8] # Number of expected mutations in the gene (Synonymous, Missense, Nonsense, Splice)
@@ -524,16 +525,17 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
         # LRTs: the free selection model is the alternative hypothesis, and the partially or fully constrained models are the nulls. The missense models (H0 and H1) is the same as for constrain_wnon_wspl == 0.
         p = 1-pchisq(2*c(llall_unc-llmis,llall-c(lltrunc,ll0)),df=c(1,1,2)) # Notice that for lltrunc and ll0, there is one fewer df when using wnon==wspl
 
-        # Adding on-sided tests results if requested by the user
+        # Adding one-sided tests results if requested by the user
         if (onesided == T) {
-          p_onesided = lrt_onesided(ll0,llmis,lltrunc,llall,wfree[1:2]) # ppos and pneg calculated by the lrt_onesided function
+          w = wfree[1:2]
+          p_onesided = tryCatch(lrt_onesided(ll0,llmis,lltrunc,llall,w), error=function(e) {c(NA,NA)}) # ppos and pneg calculated by the lrt_onesided function
           p = c(p, p_onesided)
         }
       }
       return(c(wfree,p))
     }
 
-    sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j))))
+    sel_loc = as.data.frame(t(sapply(1:nrow(genemuts), function(j) selfun_loc(j, genemuts))))
     if (constrain_wnon_wspl == 0) {
       colnames(sel_loc) = c("wmis_loc","wnon_loc","wspl_loc","pmis_loc","pnon_loc","pspl_loc","ptrunc_loc","pall_loc")
       sel_loc$qmis_loc = p.adjust(sel_loc$pmis_loc, method="BH")
