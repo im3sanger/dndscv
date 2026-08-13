@@ -178,7 +178,7 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
     message("    Incorporating site-level duplex coverage information")
     RefCDS = buildcodon(RefCDS) # Annotating spatial vectors with trinucleotide-substitution and protein-impact information
-    RefCDS = getsitedc(RefCDS, gr_genes, coverage_file) # Annotating site-level duplex coverage data for all genes
+    RefCDS = getsitedc(RefCDS, gr_genes, sitedcfile) # Annotating site-level duplex coverage data for all genes
 
     # Rewriting the L matrix weighting each site by its duplex coverage
     for (j in 1:length(RefCDS)) {
