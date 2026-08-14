@@ -441,11 +441,20 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
   # Fitting models with 1 and 2 global selection parameters
 
   s1 = gsub("wmis","wall",gsub("wnon","wall",gsub("wspl","wall",substmodel)))
-  par1 = fit_substmodel(N, L, s1)$par # Substitution model with 1 selection parameter
+  poissout1 = fit_substmodel(N, L, s1) # Substitution model with 1 selection parameter
+  par1 = poissout1$par
   s2 = gsub("wnon","wtru",gsub("wspl","wtru",substmodel))
-  par2 = fit_substmodel(N, L, s2)$par # Substitution model with 2 selection parameter
+  poissout2 = fit_substmodel(N, L, s2) # Substitution model with 2 selection parameter
+  par2 = poissout2$par
   globaldnds = rbind(par, par1, par2)[c("wmis","wnon","wspl","wtru","wall"),]
   sel_loc = sel_cv = NULL
+
+  # Adding LRT p-values for the global dN/dS ratios being different from 1
+  globalpvals = as.matrix(drop1(poissout$model, test = "Chisq", scope = c("wmis", "wnon", "wspl")))[-1,"Pr(>Chi)"]
+  globalpvals = c(globalpvals, wall=as.matrix(drop1(poissout1$model, test = "Chisq", scope = c("wall")))[-1,"Pr(>Chi)"])
+  globalpvals = c(globalpvals, wtru=as.matrix(drop1(poissout2$model, test = "Chisq", scope = c("wtru")))[-1,"Pr(>Chi)"])
+  globaldnds$lrtpvals = globalpvals[globaldnds$name]
+
 
   ## 4. dNdSloc: variable rate dN/dS model (gene mutation rate inferred from synonymous subs in the gene only)
 
