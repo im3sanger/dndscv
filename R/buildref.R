@@ -320,6 +320,7 @@ buildref = function(cdsfile, genomefile, outfile = "RefCDS.rda", numcode = 1, ex
 
     gr_genes = GenomicRanges::GRanges(df_genes$chr, IRanges::IRanges(df_genes$start, df_genes$end))
     GenomicRanges::mcols(gr_genes)$names = df_genes$gene
+    RefCDS[[1]]$numcode = numcode # Saving the numcode used to generate the RefCDS for future reference
 
     save(RefCDS, gr_genes, file=outfile)
 

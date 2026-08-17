@@ -13,7 +13,8 @@
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
 #' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
-#' @param kc List of a-priori known cancer genes (to be excluded when fitting the background model)
+#' @param kc List of a-priori known cancer genes (to be excluded when fitting the background model) [default = union of CGC81 and any significant gene in the dndsout$sel_cv object]
+#' @param sitedc Use site-level duplex coverage correction (True/False). If "T", the function will expect a RefCDS to be contained within dndsout, by running dndscv with the sitedcfile argument. [default=F]
 #'
 #' @return 'sitednds' returns a table of recurrently mutated sites and the estimates of the size parameter:
 #' @return - recursites: Table of recurrently mutated sites with site-wise dN/dS values and p-values
@@ -23,7 +24,7 @@
 #'
 #' @export
 
-sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, trinuc_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4, kc = "cgc81") {
+sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL, trinuc_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4, kc = "cgc81", sitedc = F) {
 
     ## 1. Fitting a negative binomial distribution at the site level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Site-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
@@ -53,8 +54,17 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         known_cancergenes = ""
     } else if (kc[1] %in% c("cgc81")) {
         data(list=sprintf("cancergenes_%s",kc), package="dndscv")
+        dndscv_signifgenes = dndsout$sel_cv$gene_name[dndsout$sel_cv$qallsubs_cv<0.05]
+        known_cancergenes = unique(c(known_cancergenes, dndscv_signifgenes)) # Union of dndsout significant genes and the default CGC81 genes
     } else {
         known_cancergenes = kc
+    }
+
+    # Input: sitedc. We check that a RefCDS with the right fields is contained within the dndsout object.
+    if (sitedc) {
+        if (is.null(dndsout$RefCDS[[1]]$dcvec_cds)) {
+            stop("The input dndsout object does not contain site-level duplex coverage information. Please set sitedc = F to run sitednds without site-level duplex coverage information or run dndscv with sitedcfile to incorporate site-level duplex coverage information into dndsout.")
+        }
     }
 
     # L matrix
@@ -97,17 +107,19 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     mat_relmr = t(array(relmr, dim=c(nrow(dndsout$genemuts),192))) # Relative mutation rates by gene
     R = mat_trisub * mat_relmr # Expected rate for each mutation type in each gene
 
-    # Expanded vectors: full vectors of observed and expected mutations per site across all sites considered in dndsout
-    rvec = rep(R, times=L) # Expanded vector of expected mutation counts per site
-    nvec = array(0, length(rvec)) # Initialising the vector with observed mutation counts per site
-
-    mutsites = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F) # Frequency table of mutations
+    # Frequency table of mutations
+    mutsites = read.table(text=names(freqs), header=0, sep=":", stringsAsFactors=F)
     colnames(mutsites) = c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod")
     mutsites$freq = freqs
     trindex = setNames(1:192, names(sm))
     geneindex = setNames(1:length(names(relmr)), names(relmr))
     mutsites$trindex = trindex[paste(mutsites$ref3_cod, mutsites$mut3_cod, sep=">")]
     mutsites$geneindex = geneindex[mutsites$gene]
+
+
+    # Fitting the background model
+    # - Standard option: we create expanded vectors of rates based on the L matrices
+    # - Corrected for site-level duplex coverage: we use the site-coverage and site-rate vectors contained within the RefCDS
 
     # Mutations for the background model (excluding non-synonymous mutations in known_cancergenes)
     synsites = mutsites[!(mutsites$impact!="Synonymous" & mutsites$gene %in% known_cancergenes),]
@@ -121,23 +133,79 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         stop("Too few synonymous mutations found in the input. sitednds cannot run without synonymous mutations.")
     }
 
-    # Correcting the index when there are multiple synonymous mutations in the same gene and trinucleotide class
-    s = snew = synsites$vecindex
-    sameind = 0
-    for (j in 2:nrow(synsites)) {
-        if (s[j]<=s[j-1]) {
-            sameind = sameind + 1 # Annotating a run of elements
-            snew[j] = s[j-1] - sameind # We assign it an earlier position in the vector
-        } else {
-            sameind = 0
+    if (!sitedc) { # Option 1: standard option
+
+        # Stop execution if duplex coverage correction was used to modify L matrices
+        if (dndsout$dcflag!=0) {
+            stop("Duplex coverage correction detected in the dndsout object. Rerun dndscv without dc or sitedcfile arguments to run sitednds without duplex correction. Or run dndscv with the sitedcfile argument and sitednds with sitedc=T to perform site-level correction.")
+        }
+
+        # Expanded vectors: full vectors of observed and expected mutations per site across all sites considered in dndsout
+        rvec = rep(R, times=L) # Expanded vector of expected mutation counts per site
+        nvec = array(0, length(rvec)) # Initialising the vector with observed mutation counts per site
+
+        # Correcting the index when there are multiple synonymous mutations in the same gene and trinucleotide class
+        s = snew = synsites$vecindex
+        sameind = 0
+        for (j in 2:nrow(synsites)) {
+            if (s[j]<=s[j-1]) {
+                sameind = sameind + 1 # Annotating a run of elements
+                snew[j] = s[j-1] - sameind # We assign it an earlier position in the vector
+            } else {
+                sameind = 0
+            }
+        }
+        synsites$vecindex2 = snew
+
+        nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
+        #rvec = rvec * (sum(dndsout$genemuts$n_syn)-num_syn_drivers_masked) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions)
+        rvec = rvec * sum(nvec)/sum(rvec) # Ensuring sum(nvec) = sum(rvec)
+
+    } else { # Option 2: background model corrected for site-level duplex coverage information (to be used only for duplex sequencing studies)
+
+        # Function to generate a (0,1) vector for all synonymous sites
+        # For each gene, we create a vector with length equal to all its number of "neutral" sites (synonymous mutations for known driver genes -kc gene list- and all sites for non-driver genes), using only exonic sites for simplicity
+        synsites = synsites[!(synsites$impact=="Essential_Splice"),] # We exclude splice sites for the background fit for simplicity
+        synsites_split = split(synsites, f=synsites$gene)
+        geneinds = setNames(1:length(dndsout$RefCDS), sapply(dndsout$RefCDS, function(x) x$gene_name))
+        synvecs = function(j, iskc) {
+            rj = rep(dndsout$RefCDS[[j]]$dcvec_cds, each=3)*R[dndsout$RefCDS[[j]]$codon_rates,j] # Mutation rates per site for gene j
+            nj = array(0, dndsout$RefCDS[[j]]$CDS_length*3) # Empty vector of 0s to place mutations on
+            m = synsites_split[[dndsout$RefCDS[[j]]$gene_name]]
+            cds_vec = rep(dndsout$RefCDS[[j]]$intervals_cdsvec, each=3)
+            if (!is.null(m)) {
+                for (h in 1:nrow(m)) {
+                    pos = which(cds_vec==m$pos[h] & dndsout$RefCDS[[j]]$codon_rates==m$trindex[h])
+                    nj[pos] = m$freq[h] # Annotating the mutation in the nvec vector
+                }
+            }
+            # For driver or cancer genes we consider only synonymous sites
+            if (iskc) {
+                s = which(dndsout$RefCDS[[j]]$codon_impact==1)
+                rj = rj[s]
+                nj = nj[s]
+            }
+            return(list(rj,nj))
+        }
+
+        # Expanded vectors: full vectors of observed and expected mutations per site across all sites considered in dndsout
+        iskcvec = sapply(dndsout$RefCDS, function(x) x$gene_name) %in% known_cancergenes
+        synvecs_out = sapply(1:length(dndsout$RefCDS), function(j) synvecs(j,iskcvec[j]), simplify=FALSE) ## Correct multiargument returns
+        rvec = as.numeric(unlist(sapply(synvecs_out, function(x) x[[1]])))
+        nvec = as.numeric(unlist(sapply(synvecs_out, function(x) x[[2]])))
+
+        # Checking that no mutation is found in a site with 0 expected mutations
+        if (any(nvec[rvec==0]>0)) {
+            warning("Mutations found at sites with 0 expected mutations. Please ensure that the bigwig file used for site-duplex-correction contains the aggregate duplex coverage across all samples used for mutation calling. As a temporary fix, sites with zero coverage will be excluded from this run, but please ensure that this is appropriate for your analysis.")
+            nvec = nvec[rvec>0]
+            rvec = rvec[rvec>0]
         }
     }
-    synsites$vecindex2 = snew
+    correctionfactor = sum(nvec)/sum(rvec)
+    rvec = rvec * correctionfactor # Ensuring sum(nvec) = sum(rvec)
 
-    nvec[synsites$vecindex2] = synsites$freq # Expanded nvec for the negative binomial regression
-    rvec = rvec * (sum(dndsout$genemuts$n_syn)-num_syn_drivers_masked) / sum(dndsout$genemuts$exp_syn_cv) # Minor correction ensuring that global observed and expected rates are identical (this works after subsetting substitutions)
 
-    # Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
+    ## Estimation of overdispersion: Using optimize appears to yield reliable results. Problems experienced with fitdistr, glm.nb and theta.ml. Consider using grid search if problems appear with optimize.
     if (method=="LNP") { # Modelling rates per site with a Poisson-Lognormal mixture
 
         lnp_est = fitlnpbin(nvec, rvec, theta_option = theta_option, numbins = numbins)
@@ -186,9 +254,21 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         theta = theta_ci95[1]
     }
 
-    # Creating the recursites object
+    # Creating the recursites object with observed and expected mutations per site for recurrent sites
     recursites = mutsites[, c("chr","pos","ref","mut","gene","aachange","impact","ref3_cod","mut3_cod","freq")]
-    recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")]
+    if (!sitedc) { # Option 1: standard option
+        recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")] * correctionfactor
+    } else {
+
+        # If sitedc=T, we calculate mu considering the trinucleotide context, the relative mutation rate of the gene (relmr), and the duplex coverage at the site
+        for (j in 1:nrow(recursites)) {
+            refind = geneinds[recursites$gene[j]]
+            dcvec = c(dndsout$RefCDS[[refind]]$dcvec_cds, dndsout$RefCDS[[refind]]$dcvec_spl)
+            posvec = c(dndsout$RefCDS[[refind]]$intervals_cdsvec, dndsout$RefCDS[[refind]]$intervals_splice)
+            recursites$dc[j] = dcvec[posvec==recursites$pos[j]]
+        }
+        recursites$mu = relmr[recursites$gene] * sm[paste(recursites$ref3_cod,recursites$mut3_cod,sep=">")] * correctionfactor * recursites$dc
+    }
 
     # Gene RHT
     if (!is.null(gene_list)) {
@@ -276,8 +356,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     }
 
     if (is.null(site_list)) {
-        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL))
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, usedtheta=theta))
     } else {
-        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, globaldnds_knownsites=globaldnds_knownsites))
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, globaldnds_knownsites=globaldnds_knownsites, usedtheta=theta))
     }
 }

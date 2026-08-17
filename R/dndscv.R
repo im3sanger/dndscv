@@ -24,6 +24,7 @@
 #' @param onesided Option to run one-sided positive and negative selection tests per gene (default = FALSE). Note that one-sided tests are only performed for the wnon==wspl model, so using onesided=TRUE will overwrite constrain_wnon_wspl to TRUE.
 #' @param dc Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)
 #' @param sitedcfile Bigwig file with the total duplex depth per site in the dataset. Use this argument only when running dNdScv on duplex sequencing data, to account for site-level duplex coverage information. Users should only use dc (mean duplex coverage per gene) or sitedcfile (site-level correction) as inputs, not both (default = NULL)
+#' @param outputrefdb Output the RefCDS object. This can be useful for some downstream operations. It will be set to "T" internally when using outmats=T and sitedcfile to enable subsequent site-level duplex coverage correction in sitednds and codondnds (default = F)
 #'
 #' @return 'dndscv' returns a list of objects:
 #' @return - globaldnds: Global dN/dS estimates across all genes.
@@ -42,7 +43,7 @@
 #'
 #' @export
 
-dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500, onesided = F, dc = NULL, sitedcfile = NULL) {
+dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", kc = "cgc81", cv = "hg19", max_muts_per_gene_per_sample = 3, max_coding_muts_per_sample = 3000, use_indel_sites = T, min_indels = 5, maxcovs = 20, constrain_wnon_wspl = T, outp = 3, numcode = 1, outmats = F, mingenecovs = 500, onesided = F, dc = NULL, sitedcfile = NULL, outputrefdb = F) {
 
   ## 1. Environment
   message("[1] Loading the environment...")
@@ -125,10 +126,13 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
 
   # [Input] Duplex coverage (dc or sitedcfile arguments)
   if (!is.null(dc) | !is.null(sitedcfile)) {
+    dcflag = 1
     if (!is.infinite(max_muts_per_gene_per_sample) | !is.infinite(max_coding_muts_per_sample)) {
       max_muts_per_gene_per_sample = Inf; max_coding_muts_per_sample = Inf
       warning("Your use of the dc argument suggests that you are using duplex data. The arguments max_muts_per_gene_per_sample and max_coding_muts_per_sample have been set to Inf as recommended.")
     }
+  } else {
+      dcflag = 0 # No duplex coverage correction
   }
   if (!is.null(dc)) {
     if (is.vector(dc)) {
@@ -144,6 +148,14 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     } else {
       stop("dc must be a Named Numeric Vector with the vector values corresponding to the mean duplex coverage per site per gene, and with the vector names corresponding to gene names")
     }
+  }
+
+  # [Input] numcode: In later versions of buildref, the numcode argument used to create a RefCDS is stored in the RefCDS to overwrite the numcode argument in dndscv
+  if (!is.null(RefCDS[[1]]$numcode)) {
+      if (numcode != RefCDS[[1]]$numcode) {
+          warning(sprintf("numcode has been changed to numcode=%0.0f to match the genetic code used to generate the RefCDS",RefCDS[[1]]$numcode))
+          numcode = RefCDS[[1]]$numcode
+      }
   }
 
   # Nucleotide and trinucleotide vectors
@@ -814,9 +826,15 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
   annot = annot[,setdiff(colnames(annot),c("start","end","geneind"))]
 
   if (outmats) {
-    dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, N = Nall, L = Lall)
+    dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, N = Nall, L = Lall, dcflag = dcflag)
+    if (outputrefdb | !is.null(sitedcfile)) {
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, N = Nall, L = Lall, RefCDS = RefCDS, dcflag = dcflag)
+    }
   } else {
-    dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv)
+    dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, dcflag = dcflag)
+    if (outputrefdb) {
+        dndscvout = list(globaldnds = globaldnds, sel_cv = sel_cv, sel_loc = sel_loc, annotmuts = annot, genemuts = genemuts, geneindels = geneindels, mle_submodel = mle_submodel, exclsamples = exclsamples, exclmuts = exclmuts, nbreg = nbreg, nbregind = nbregind, poissmodel = poissmodel, wrongmuts = wrong_refbase, syncv = syncv, RefCDS = RefCDS, dcflag = dcflag)
+    }
   }
   return(dndscvout)
 
