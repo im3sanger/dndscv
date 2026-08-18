@@ -33,6 +33,13 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     if (length(dndsout$N)==0) { stop(sprintf("Invalid input: dndsout must be generated using outmats=T in dndscv.")) }
     if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
 
+    # Input: sitedc. We check that a RefCDS with the right fields is contained within the dndsout object.
+    if (sitedc) {
+        if (is.null(dndsout$RefCDS[[1]]$dcvec_cds)) {
+            stop("The input dndsout object does not contain site-level duplex coverage information. Please set sitedc = F to run sitednds without site-level duplex coverage information or run dndscv with sitedcfile to incorporate site-level duplex coverage information into dndsout.")
+        }
+    }
+
     # Restricting the analysis to an input list of genes
     if (!is.null(gene_list)) {
         g = as.vector(dndsout$genemuts$gene_name)
@@ -44,9 +51,22 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         if (length(nonex)>0) {
             warning(sprintf("The following input gene names are not in dndsout input object and will not be analysed: %s.", paste(nonex,collapse=", ")))
         }
-        numtests = sum(dndsout$L[,,which(g %in% gene_list)])
+        # Number of sites to perform multiple testing correction
+        if (!sitedc) {
+            numtests = sum(dndsout$L[,,which(g %in% gene_list)])
+        } else {
+            # Restricting the RefCDS to gene_list and summing sites across genes
+            refgenes = sapply(dndsout$RefCDS, function(x) x$gene_name)
+            dndsout$RefCDS = dndsout$RefCDS[refgenes %in% gene_list]
+            numtests = sum(sapply(dndsout$RefCDS, function(x) (x$CDS_length + length(x$intervals_splice))*3))
+        }
     } else {
-        numtests = sum(dndsout$L)
+        if (!sitedc) {
+            numtests = sum(dndsout$L)
+        } else {
+            # Number of sites to perform multiple testing correction
+            numtests = sum(sapply(dndsout$RefCDS, function(x) (x$CDS_length + length(x$intervals_splice))*3))
+        }
     }
 
     # Input: known cancer genes to exclude from the background model fitting (the user can input a gene list as a character vector)
@@ -58,13 +78,6 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
         known_cancergenes = unique(c(known_cancergenes, dndscv_signifgenes)) # Union of dndsout significant genes and the default CGC81 genes
     } else {
         known_cancergenes = kc
-    }
-
-    # Input: sitedc. We check that a RefCDS with the right fields is contained within the dndsout object.
-    if (sitedc) {
-        if (is.null(dndsout$RefCDS[[1]]$dcvec_cds)) {
-            stop("The input dndsout object does not contain site-level duplex coverage information. Please set sitedc = F to run sitednds without site-level duplex coverage information or run dndscv with sitedcfile to incorporate site-level duplex coverage information into dndsout.")
-        }
     }
 
     # L matrix
@@ -356,8 +369,8 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     }
 
     if (is.null(site_list)) {
-        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, usedtheta=theta))
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, usedtheta=theta, numtests = numtests))
     } else {
-        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, globaldnds_knownsites=globaldnds_knownsites, usedtheta=theta))
+        return(list(recursites=recursites, overdisp=thetaout, fpr_nonsyn_q05=fpr_nonsyn, LL=LL, globaldnds_knownsites=globaldnds_knownsites, usedtheta=theta, numtests = numtests))
     }
 }
