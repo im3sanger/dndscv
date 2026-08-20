@@ -5,7 +5,7 @@
 #' @author Inigo Martincorena (Wellcome Sanger Institute)
 #'
 #' @param dndsout Output object from dndscv.
-#' @param refcds RefCDS object annotated with codon-level information using the buildcodon function.
+#' @param refcds RefCDS object annotated with codon-level information using the buildcodon function. This input is required unless it is already contained within the dndsout when running sitedc=T.
 #' @param min_recurr Minimum number of mutations per codon to estimate codon-wise dN/dS ratios. [default=2]
 #' @param gene_list List of genes to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of genes is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
 #' @param codon_list List of hotspot codons to restrict the p-value and q-value calculations (Restricted Hypothesis Testing). Note that q-values are only valid if the list of codons is decided a priori. [default=NULL, codondnds will be run on all genes in dndsout]
@@ -13,6 +13,7 @@
 #' @param syn_drivers Vector with a list of known synonymous driver mutations to exclude from the background model [default="TP53:T125T"]. See Martincorena et al., Cell, 2017 (PMID:29056346).
 #' @param method Overdispersion model: NB = Negative Binomial (Gamma-Poisson), LNP = Poisson-Lognormal (see Hess et al., BiorXiv, 2019). [default="NB"]
 #' @param numbins Number of bins to discretise the rvec vector [default=1e4]. This enables fast execution of the LNP model in datasets of arbitrarily any size.
+#' @param sitedc Use site-level duplex coverage correction (True/False). If "T", the function will expect a RefCDS to be contained within dndsout by running dndscv with the sitedcfile argument. [default=F]
 #'
 #' @return 'codondnds' returns a table of recurrently mutated codons and the estimates of the size parameter:
 #' @return - recurcodons: Table of recurrently mutated codons with codon-wise dN/dS values and p-values
@@ -22,13 +23,28 @@
 #'
 #' @export
 
-codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4) {
+codondnds = function(dndsout, refcds = NULL, min_recurr = 2, gene_list = NULL, codon_list = NULL, theta_option = "conservative", syn_drivers = "TP53:T125T", method = "NB", numbins = 1e4, sitedc = F) {
 
     ## 1. Fitting an overdispersed distribution at the codon level considering the background mutation rate of the gene and of each trinucleotide
     message("[1] Codon-wise overdispersed model accounting for trinucleotides and relative gene mutability...")
 
     if (nrow(dndsout$mle_submodel)!=195) { stop("Invalid input: dndsout must be generated using the default trinucleotide substitution model in dndscv.") }
+
+    # Input: sitedc. We check that a RefCDS with the right fields is contained within the dndsout object when using sitedc=T
+    if (sitedc) {
+        if (is.null(dndsout$RefCDS[[1]]$dcvec_cds)) {
+            stop("The input dndsout object does not contain site-level duplex coverage information. Please set sitedc = F to run sitednds without site-level duplex coverage information or run dndscv with sitedcfile to incorporate site-level duplex coverage information into dndsout.")
+        } else if (is.null(refcds)) {
+            refcds = dndsout$RefCDS
+            message("    RefCDS provided within the dndsout input object rather than as a separate input.")
+        }
+    } else {
+        if (is.null(refcds)) { # If sitedc=F, a RefCDS has to be provided as an input
+            stop("Invalid input: A RefCDS object annotated by buildcodon needs to be provided as an input.")
+        }
+    }
     if (is.null(refcds[[1]]$codon_impact)) { stop("Invalid input: the input RefCDS object must contain codon-level annotation. Use the buildcodon function to add this information.") }
+
 
     # Restricting refcds to genes in the dndsout object
     refcds = refcds[sapply(refcds, function(x) x$gene_name) %in% dndsout$genemuts$gene_name] # Only input genes
@@ -81,16 +97,21 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
         nvec_syn = rvec_syn = rvec_ns = array(0,refcds[[j]]$CDS_length/3) # Initialising the obs and exp vectors
         gene = refcds[[j]]$gene_name
         sm_rel = sm * relmr[gene]
+        ratespersite = sm_rel[refcds[[j]]$codon_rates]
+
+        if (sitedc) { # When using duplex coverage correction, we multiply the relative rates per site by the duplex coverage at the site
+            ratespersite = ratespersite * rep(refcds[[j]]$dcvec_cds, each=3)
+        }
 
         # Expected rates
         ind = rep(1:(refcds[[j]]$CDS_length/3), each=9)
         syn = which(refcds[[j]]$codon_impact==1) # Synonymous changes
         ns = which(refcds[[j]]$codon_impact %in% c(2,3)) # Missense and nonsense changes
 
-        aux = sapply(split(refcds[[j]]$codon_rates[syn], f=ind[syn]), function(x) sum(sm_rel[x]))
+        aux = sapply(split(ratespersite[syn], f=ind[syn]), function(x) sum(x))
         rvec_syn[as.numeric(names(aux))] = aux
 
-        aux = sapply(split(refcds[[j]]$codon_rates[ns], f=ind[ns]), function(x) sum(sm_rel[x]))
+        aux = sapply(split(ratespersite[ns], f=ind[ns]), function(x) sum(x))
         rvec_ns[as.numeric(names(aux))] = aux
 
         # Observed mutations
@@ -261,12 +282,12 @@ codondnds = function(dndsout, refcds, min_recurr = 2, gene_list = NULL, codon_li
 
     } else {
         recurcodons = recurcodons_ext = NULL
-        warning("No codon was found with the minimum recurrence requested [default min_recurr=2]")
+        warning("    No codon was found with the minimum recurrence requested [default min_recurr=2]")
     }
 
     if (is.null(codon_list)) {
-        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL))
+        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL, usedtheta=theta, numtests = numtests))
     } else {
-        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL, globaldnds_knowncodons=globaldnds_knowncodons))
+        return(list(recurcodons=recurcodons, recurcodons_ext=recurcodons_ext, overdisp=thetaout, LL=LL, globaldnds_knowncodons=globaldnds_knowncodons, usedtheta=theta, numtests = numtests))
     }
 }
