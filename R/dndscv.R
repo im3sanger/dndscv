@@ -462,11 +462,12 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
   sel_loc = sel_cv = NULL
 
   # Adding LRT p-values for the global dN/dS ratios being different from 1
-  globalpvals = as.matrix(drop1(poissout$model, test = "Chisq", scope = c("wmis", "wnon", "wspl")))[-1,"Pr(>Chi)"]
-  globalpvals = c(globalpvals, wall=as.matrix(drop1(poissout1$model, test = "Chisq", scope = c("wall")))[-1,"Pr(>Chi)"])
-  globalpvals = c(globalpvals, wtru=as.matrix(drop1(poissout2$model, test = "Chisq", scope = c("wtru")))[-1,"Pr(>Chi)"])
-  globaldnds$lrtpvals = globalpvals[globaldnds$name]
-
+  tryCatch({
+    globalpvals = as.matrix(drop1(poissout$model, test = "Chisq", scope = c("wmis", "wnon", "wspl")))[-1,"Pr(>Chi)"]
+    globalpvals = c(globalpvals, wall=as.matrix(drop1(poissout1$model, test = "Chisq", scope = c("wall")))[-1,"Pr(>Chi)"])
+    globalpvals = c(globalpvals, wtru=as.matrix(drop1(poissout2$model, test = "Chisq", scope = c("wtru")))[-1,"Pr(>Chi)"])
+    globaldnds$lrtpvals = globalpvals[globaldnds$name]
+  }, error = function(e) {})
 
   ## 4. dNdSloc: variable rate dN/dS model (gene mutation rate inferred from synonymous subs in the gene only)
 
