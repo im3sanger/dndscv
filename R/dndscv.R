@@ -244,6 +244,10 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     warning("Same mutations observed in different sampleIDs. Please verify that these are independent events and remove duplicates otherwise.")
   }
 
+  # Replacing "." or "" entries with "-" for proper indel handling
+  mutations$ref[mutations$ref %in% c("",".")] = "-"
+  mutations$mut[mutations$mut %in% c("",".")] = "-"
+  
   # Start and end position of each mutation
   mutations$end = mutations$start = mutations$pos
   l = nchar(mutations$ref)-1 # Deletions of multiple bases
@@ -387,14 +391,17 @@ dndscv = function(mutations, gene_list = NULL, refdb = "hg19", sm = "192r_3w", k
     del = nchar(gsub("-","",indels$ref))>nchar(gsub("-","",indels$mut))
     multisub = nchar(gsub("-","",indels$ref))==nchar(gsub("-","",indels$mut)) # Including dinucleotides
     l = nchar(gsub("-","",indels$ref))-nchar(gsub("-","",indels$mut))
+    anch = (ins | del) & nchar(gsub("-","",indels$ref))>0 & nchar(gsub("-","",indels$mut))>0 & substr(indels$ref,1,1)==substr(indels$mut,1,1) # VCF-style anchored indel (shared, unchanged first base)
+    mut_noanch = nchar(gsub("-","",indels$mut)) - anch # Inserted bases, excluding any anchor base
     indelstr = rep(NA,nrow(indels))
     for (j in 1:nrow(indels)) {
       geneind = indels$geneind[j]
       pos = indels$start[j]:indels$end[j]
+      if (anch[j] & ins[j]) { pos = (indels$start[j]+1):max(indels$start[j]+1, indels$end[j]) } # Skip the anchor for insertions (deletions are already shifted earlier in the dndscv code)
       if (ins[j]) { pos = c(pos-1,pos) } # Adding the upstream base for insertions
       pos_ind = chr2cds(pos, RefCDS[[geneind]]$intervals_cds, RefCDS[[geneind]]$strand)
       if (length(pos_ind)>0) {
-        inframe = (length(pos_ind) %% 3) == 0
+        inframe = if (ins[j]) { (abs(l[j]) %% 3) == 0 } else { ((length(pos_ind) - mut_noanch[j]) %% 3) == 0 } # Multiples of 3. Insertions: inserted length. Deletions/delins: exonic bases lost minus bases inserted.
         if (ins[j]) { # Insertion
           indelstr[j] = sprintf("%0.0f-%0.0f-ins%s",min(pos_ind),max(pos_ind),c("frshift","inframe")[inframe+1])
         } else if (del[j]) { # Deletion
