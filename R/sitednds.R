@@ -135,7 +135,7 @@ sitednds = function(dndsout, min_recurr = 2, gene_list = NULL, site_list = NULL,
     # - Corrected for site-level duplex coverage: we use the site-coverage and site-rate vectors contained within the RefCDS
 
     # Mutations for the background model (excluding non-synonymous mutations in known_cancergenes)
-    synsites = mutsites[!(mutsites$impact!="Synonymous" & mutsites$gene %in% known_cancergenes),]
+    synsites = mutsites[mutsites$impact=="Synonymous" & !(mutsites$gene %in% known_cancergenes),]
     synsites = synsites[!(paste(synsites$gene,synsites$aachange,sep=":") %in% syn_drivers),]
     Lcum = array(cumsum(L), dim=dim(L)) # Cumulative L indicating the position to place a given mutation in the nvec following rvec
     synsites$vecindex = apply(as.matrix(synsites[,c("trindex","geneindex")]), 1, function(x) Lcum[x[1], x[2]]) # Index for the mutation
