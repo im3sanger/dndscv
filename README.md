@@ -45,7 +45,7 @@ Tutorial
 For a tutorial on dNdScv see the vignette included with the package. This includes 
 examples for whole-exome/genome data and for targeted data.
 
-[Tutorial: getting started with dNdScv](http://htmlpreview.github.io/?http://github.com/im3sanger/dndscv/blob/master/vignettes/dNdScv.html)
+[Tutorial: getting started with dNdScv](https://htmlpreview.github.io/?https://github.com/im3sanger/dndscv/blob/master/vignettes/dNdScv.html)
 
 Genome assemblies and species
 --------
@@ -57,7 +57,7 @@ dNdScv).
 
 Users interested in trying *dNdScv* on a different set of transcripts, a different human assembly
 or a different species can use the buildref function to create a custom RefCDS, as explained
-in this [tutorial](http://htmlpreview.github.io/?http://github.com/im3sanger/dndscv/blob/master/vignettes/buildref.html).
+in this [tutorial](https://htmlpreview.github.io/?https://github.com/im3sanger/dndscv/blob/master/vignettes/buildref.html).
 
 Pre-computed RefCDS files (RefCDS objects) to run *dNdScv* on some popular species
 (e.g. mouse, rat, cow, dog, yeast or SARS-CoV-2) are available from 
